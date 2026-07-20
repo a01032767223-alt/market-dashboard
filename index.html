@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>48시간 시장 감시 대시보드</title>
+<style>
+  :root {
+    --up: #d94040;      /* 국내 관례: 상승=빨강 */
+    --down: #2b6cb0;    /* 하락=파랑 */
+    --gold: #b8860b;
+    --bg: #0f1420;
+    --card: #1a2130;
+    --card2: #222c40;
+    --text: #e8ecf4;
+    --muted: #8a97ad;
+    --line: #2c3648;
+    --buy: #2f9e6f;
+    --wait: #d99a2b;
+    --caution: #d9722b;
+    --sell: #d94040;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 14px;
+    max-width: 900px;
+    margin: 0 auto;
+    -webkit-font-smoothing: antialiased;
+  }
+  .header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 8px;
+  }
+  .header h1 { font-size: 19px; font-weight: 700; }
+  .header .sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .live {
+    display: flex; align-items: center; gap: 6px; font-size: 11px;
+    color: var(--buy); background: var(--card); padding: 6px 10px; border-radius: 8px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--buy);
+    animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* 색 범례 */
+  .legend {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--card); border-radius: 10px; padding: 9px 13px; margin-bottom: 12px;
+    border: 1px solid var(--line);
+  }
+  .lg { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--muted); }
+  .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .lg-note { font-size: 9.5px; color: var(--muted); margin-left: auto; }
+
+  /* 종합 신호등 */
+  .signal {
+    border-radius: 14px; padding: 16px 18px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .signal .verdict { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  .signal .reason { font-size: 12.5px; line-height: 1.55; opacity: 0.92; }
+  .sig-buy { background: rgba(47,158,111,0.16); border: 1px solid rgba(47,158,111,0.4); }
+  .sig-buy .verdict { color: #4ade9a; }
+  .sig-wait { background: rgba(217,154,43,0.16); border: 1px solid rgba(217,154,43,0.4); }
+  .sig-wait .verdict { color: #f5c563; }
+  .sig-caution { background: rgba(217,114,43,0.16); border: 1px solid rgba(217,114,43,0.4); }
+  .sig-caution .verdict { color: #f0a163; }
+  .sig-sell { background: rgba(217,64,64,0.16); border: 1px solid rgba(217,64,64,0.4); }
+  .sig-sell .verdict { color: #f07070; }
+
+  /* 카드 그리드 */
+  .grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;
+  }
+  @media (max-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 400px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--card); border-radius: 12px; padding: 13px; border: 1px solid var(--line);
+    position: relative;
+  }
+  .card .label {
+    font-size: 10.5px; color: var(--muted); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 4px; justify-content: space-between;
+  }
+  .card .badge {
+    font-size: 8.5px; padding: 1px 5px; border-radius: 4px; font-weight: 600;
+  }
+  .badge-auto { background: rgba(47,158,111,0.2); color: #4ade9a; }
+  .badge-semi { background: rgba(217,154,43,0.2); color: #f5c563; }
+  .card .value { font-size: 20px; font-weight: 700; line-height: 1.1; }
+  .card .change { font-size: 11.5px; margin-top: 2px; font-weight: 600; }
+  .card .meta { font-size: 10px; color: var(--muted); margin-top: 4px; line-height: 1.4; min-height: 26px; }
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+
+  /* 게이지 (반원) */
+  .gauge-wrap { margin-top: 8px; display: flex; justify-content: center; }
+  svg.gauge { width: 100%; max-width: 130px; height: 52px; }
+
+  /* 스파크라인 (실제 가격 라인차트) */
+  .spark-svg { width: 100%; height: 28px; margin-top: 8px; display: block; }
+  .spark-empty { font-size: 9px; color: var(--muted); margin-top: 12px; text-align: center; height: 28px; }
+  .viz-cap { font-size: 8.5px; color: var(--muted); text-align: center; margin-top: 5px; }
+
+  /* AI 패널 */
+  .ai-panel {
+    background: var(--card); border-radius: 14px; padding: 16px; border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .ai-panel h2 {
+    font-size: 13px; font-weight: 700; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 7px; color: #7aa5e8;
+  }
+  .ai-item {
+    padding: 11px 13px; border-radius: 10px; margin-bottom: 8px; font-size: 12.5px; line-height: 1.6;
+  }
+  .ai-item:last-child { margin-bottom: 0; }
+  .ai-item .t { font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+  .ai-blue { background: rgba(55,138,221,0.12); border-left: 3px solid #378add; }
+  .ai-blue .t { color: #6ba8e8; }
+  .ai-gold { background: rgba(184,134,11,0.14); border-left: 3px solid var(--gold); }
+  .ai-gold .t { color: #e0b050; }
+  .ai-green { background: rgba(47,158,111,0.12); border-left: 3px solid var(--buy); }
+  .ai-green .t { color: #4ade9a; }
+  .ai-red { background: rgba(217,64,64,0.12); border-left: 3px solid var(--sell); }
+  .ai-red .t { color: #f07070; }
+
+  /* 전략 단계 바 */
+  .strategy {
+    background: var(--card); border-radius: 14px; padding: 16px; border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .strategy h2 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--muted); }
+  .stage-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 11.5px; }
+  .stage-row:last-child { margin-bottom: 0; }
+  .stage-num {
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 11px; flex-shrink: 0;
+    background: var(--card2); color: var(--muted);
+  }
+  .stage-num.active { background: var(--wait); color: #1a1000; }
+  .stage-num.reached { background: var(--buy); color: #001a0e; }
+  .stage-info { flex: 1; }
+  .stage-info .trig { color: var(--muted); font-size: 10px; }
+  .stage-badge { font-size: 9.5px; padding: 2px 7px; border-radius: 5px; font-weight: 600; }
+
+  /* 입력 패널 */
+  .manual {
+    background: var(--card); border-radius: 14px; padding: 16px; border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .manual h2 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--muted); }
+  .manual .hint { font-size: 10.5px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+  .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (max-width: 480px) { .input-grid { grid-template-columns: 1fr; } }
+  .input-row label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .input-row input {
+    width: 100%; background: var(--card2); border: 1px solid var(--line); color: var(--text);
+    padding: 8px 10px; border-radius: 8px; font-size: 13px; font-family: inherit;
+  }
+  .input-row input:focus { outline: none; border-color: #378add; }
+  .btn {
+    background: #378add; color: #fff; border: none; padding: 10px 18px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; margin-top: 12px; width: 100%;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(0.98); }
+
+  /* 4년 주기 타임라인 */
+  .cycle {
+    background: var(--card); border-radius: 14px; padding: 16px; border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .cycle-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+  .cycle-head h2 { font-size: 13px; font-weight: 700; }
+  .cycle-head .pct { font-size: 11px; color: var(--muted); }
+  .cycle-track-wrap { position: relative; margin: 40px 4px 44px; }
+  .cycle-nowlabel {
+    position: absolute; top: -30px; transform: translateX(-50%); z-index: 5;
+    font-size: 10.5px; font-weight: 700; color: #f0a163;
+    background: rgba(217,114,43,0.18); padding: 3px 10px; border-radius: 12px; white-space: nowrap;
+  }
+  .cycle-dot {
+    position: absolute; top: -4px; transform: translateX(-50%);
+    width: 14px; height: 14px; border-radius: 50%; background: #d9722b;
+    border: 3px solid var(--card); z-index: 4;
+  }
+  .cycle-vline { position: absolute; top: 8px; width: 2px; height: 34px; background: #d9722b; z-index: 2; transform: translateX(-50%); }
+  .cycle-track { display: flex; height: 26px; border-radius: 6px; overflow: hidden; margin-top: 12px; }
+  .cycle-track > div {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600;
+  }
+  .cycle-milestones { position: relative; height: 0; }
+  .cycle-milestones .ms {
+    position: absolute; top: 2px; transform: translateX(-50%);
+    width: 7px; height: 7px; border-radius: 50%; background: var(--muted); z-index: 3;
+  }
+  .cycle-milestones .ms.done { background: #5DCAA5; }
+  .cycle-milestones .ms.est { background: transparent; border: 1.5px dashed #85B7EB; width: 8px; height: 8px; }
+  .cycle-dates { position: relative; height: 30px; margin-top: 10px; }
+  .cycle-dates span {
+    position: absolute; transform: translateX(-50%); text-align: center;
+    font-size: 8.5px; color: var(--muted); line-height: 1.35; white-space: nowrap;
+  }
+  .cycle-dates span b { color: var(--text); font-size: 9px; }
+  .cycle-dates span:first-child { transform: translateX(-10%); text-align: left; }
+  .cycle-dates span:last-child { transform: translateX(-90%); text-align: right; }
+  .cycle-phase {
+    border-radius: 10px; padding: 11px 13px; margin-top: 16px; font-size: 12px; line-height: 1.6;
+  }
+  .cycle-phase .pt { font-weight: 700; margin-bottom: 3px; }
+  .cycle-hist {
+    background: var(--card2); border-radius: 10px; padding: 11px 13px; margin-top: 12px;
+  }
+  .hist-title { font-size: 10.5px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+  .hist-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  .hist-table td { padding: 4px 0; }
+  .hist-table .hh td { color: var(--muted); font-size: 9.5px; }
+  .hist-table tr:not(.hh) { border-top: 0.5px solid var(--line); }
+  .hist-table .cur td { color: #f0a163; font-weight: 600; }
+  .hist-note { font-size: 9.5px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .cycle-note { font-size: 9.5px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+
+  .footer { text-align: center; font-size: 10px; color: var(--muted); margin-top: 18px; line-height: 1.6; }
+  .error-note {
+    font-size: 10px; color: var(--wait); text-align: center; margin-top: 6px; min-height: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📊 48시간 시장 감시 대시보드</h1>
+    <div class="sub">실시간 자동 갱신 · 주식 자금의 향방을 추적</div>
+  </div>
+  <div class="live"><span class="dot"></span><span id="live-time">연결 중…</span></div>
+</div>
+
+<!-- 색 범례 -->
+<div class="legend">
+  <span class="lg"><span class="sw" style="background:var(--up);"></span>빨강 = 상승·과열</span>
+  <span class="lg"><span class="sw" style="background:var(--down);"></span>파랑 = 하락·안정</span>
+  <span class="lg"><span class="sw" style="background:var(--gold);"></span>금색 = 도피처(금)</span>
+  <span class="lg-note">스파크라인은 최근 7일 실제 가격 흐름</span>
+</div>
+
+<!-- 종합 신호등 -->
+<div class="signal sig-wait" id="signal">
+  <div class="verdict" id="verdict">관망</div>
+  <div class="reason" id="reason">지표를 불러오는 중입니다…</div>
+</div>
+
+<!-- 6개 지표 카드 -->
+<div class="grid" id="cards"></div>
+
+<!-- AI 투자 의견 -->
+<div class="ai-panel">
+  <h2>🤖 AI 투자 의견 <span style="font-size:10px;color:var(--muted);font-weight:400;">(지표 변화에 따라 자동 재계산)</span></h2>
+  <div id="ai-opinions"></div>
+</div>
+
+<!-- 비트코인 4년 주기 -->
+<div class="cycle">
+  <div class="cycle-head">
+    <h2>₿ 비트코인 4년 주기 (반감기 사이클)</h2>
+    <div class="pct">진행률 <b id="cycle-pct" style="color:var(--text);">–</b></div>
+  </div>
+  <div class="cycle-track-wrap" id="cycle-track-wrap"></div>
+  <div class="cycle-phase" id="cycle-phase"></div>
+  <div class="cycle-hist" id="cycle-hist"></div>
+  <div class="cycle-note">
+    ※ 예상 저점 시기는 과거 패턴(고점 후 약 12개월) 기준 추정이며 확정이 아닙니다. ETF 도입 등으로 이번 주기는 과거와 다를 수 있어 참고용으로만 활용하세요.
+  </div>
+</div>
+
+<!-- 5단계 전략 상태 -->
+<div class="strategy">
+  <h2>📍 나의 5단계 하락장 매수 전략</h2>
+  <div id="stages"></div>
+</div>
+
+<!-- 수동 입력 (반자동 지표) -->
+<div class="manual">
+  <h2>✏️ 지수·심리 지표 입력</h2>
+  <div class="hint">코인·도미넌스·금·환율은 자동 갱신됩니다. 아래 4개는 무료 실시간 API가 제한적이라 직접 입력하세요 (개장 시 하루 1회면 충분).</div>
+  <div class="input-grid">
+    <div class="input-row">
+      <label>KOSPI 지수</label>
+      <input type="number" id="in-kospi" step="0.01" placeholder="예: 6643.58">
+    </div>
+    <div class="input-row">
+      <label>KOSPI 사상최고점 (ATH)</label>
+      <input type="number" id="in-kospi-ath" step="0.01" placeholder="예: 8800">
+    </div>
+    <div class="input-row">
+      <label>S&P 500 지수</label>
+      <input type="number" id="in-spx" step="0.01" placeholder="예: 7519">
+    </div>
+    <div class="input-row">
+      <label>S&P 500 ATH</label>
+      <input type="number" id="in-spx-ath" step="0.01" placeholder="예: 7620.90">
+    </div>
+    <div class="input-row">
+      <label>VIX 지수</label>
+      <input type="number" id="in-vix" step="0.01" placeholder="예: 22.4">
+    </div>
+    <div class="input-row">
+      <label>공포·탐욕 지수 (0-100)</label>
+      <input type="number" id="in-fng" step="1" placeholder="예: 35">
+    </div>
+    <div class="input-row">
+      <label>외국인 수급 (순매수 +/순매도 -)</label>
+      <input type="number" id="in-foreign" step="1" placeholder="예: -3500 (억원)">
+    </div>
+    <div class="input-row">
+      <label>금 현물 (수동 보정, 선택)</label>
+      <input type="number" id="in-gold" step="0.01" placeholder="자동 실패 시만">
+    </div>
+  </div>
+  <button class="btn" id="save-btn">저장하고 다시 판단</button>
+  <div class="error-note" id="err-note"></div>
+</div>
+
+<div class="footer">
+  자동 데이터: CoinGecko(가격·도미넌스), freegoldapi(금), exchangerate(환율)<br>
+  본 대시보드는 투자 참고용이며, 최종 판단과 책임은 투자자 본인에게 있습니다.<br>
+  <span id="build-date"></span>
+</div>
+
+<script>
+// ============================================================
+// 초기값 (2026-07-20 기준 조사값) — API 실패 시 폴백으로도 사용
+// ============================================================
+const DEFAULTS = {
+  btc: 63423, btcChg: -1.66,
+  eth: 1874.59, ethChg: -0.5,
+  btcDom: 57.0, ethDom: 9.94,
+  gold: 4665, goldChg: 0.8,
+  usdkrw: 1200, usdkrwChg: 0.4,
+  // 수동 입력 지표 기본값
+  kospi: 6643.58, kospiAth: 8800,
+  spx: 7519, spxAth: 7620.90,
+  vix: 22.4, fng: 35, foreign: -3500,
+  // 실제 7일 가격 곡선 (스파크라인용) — API에서 채움
+  btcSpark: [], ethSpark: [], goldSpark: []
+};
+
+let state = loadState();
+
+function loadState() {
+  const saved = {};
+  try {
+    const raw = window.__memState;  // 세션 내 유지용
+    if (raw) return { ...DEFAULTS, ...raw };
+  } catch(e) {}
+  return { ...DEFAULTS };
+}
+
+// ============================================================
+// 데이터 fetch (브라우저에서 직접 호출)
+// ============================================================
+async function fetchAll() {
+  let ok = [];
+  let fail = [];
+
+  // 1) CoinGecko: BTC/ETH 가격 + 24h 변동 + 7일 실제 곡선(스파크라인)
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&sparkline=true&price_change_percentage=24h');
+    const d = await r.json();
+    if (Array.isArray(d) && d.length) {
+      const btc = d.find(c => c.id === 'bitcoin');
+      const eth = d.find(c => c.id === 'ethereum');
+      if (btc) {
+        state.btc = btc.current_price;
+        state.btcChg = btc.price_change_percentage_24h;
+        if (btc.sparkline_in_7d && btc.sparkline_in_7d.price) state.btcSpark = btc.sparkline_in_7d.price;
+      }
+      if (eth) {
+        state.eth = eth.current_price;
+        state.ethChg = eth.price_change_percentage_24h;
+        if (eth.sparkline_in_7d && eth.sparkline_in_7d.price) state.ethSpark = eth.sparkline_in_7d.price;
+      }
+      ok.push('가격');
+    }
+  } catch(e) { fail.push('가격'); }
+
+  // 2) CoinGecko: 글로벌 도미넌스
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/global');
+    const d = await r.json();
+    if (d.data && d.data.market_cap_percentage) {
+      state.btcDom = d.data.market_cap_percentage.btc;
+      state.ethDom = d.data.market_cap_percentage.eth;
+      ok.push('도미넌스');
+    }
+  } catch(e) { fail.push('도미넌스'); }
+
+  // 3) 금 현물 (gold-api.com 현재가 + freegoldapi 7일 곡선)
+  try {
+    const r = await fetch('https://gold-api.com/price/XAU');
+    const d = await r.json();
+    if (d && d.price) {
+      state.gold = d.price;
+      ok.push('금');
+    }
+  } catch(e) { fail.push('금'); }
+  // 금 7일 곡선 (freegoldapi CSV - 최근 8행)
+  try {
+    const r2 = await fetch('https://freegoldapi.com/data/latest.csv');
+    const csv = await r2.text();
+    const rows = csv.trim().split('\n').slice(-8);
+    const prices = rows.map(l => parseFloat(l.split(',')[1])).filter(v => !isNaN(v));
+    if (prices.length >= 2) {
+      state.goldSpark = prices;
+      // 현재가 자동 실패 시 CSV 마지막 값으로 보완
+      if (!state.gold) state.gold = prices[prices.length - 1];
+      // 전일 대비 변동률 계산
+      const prev = prices[prices.length - 2];
+      state.goldChg = ((state.gold - prev) / prev) * 100;
+    }
+  } catch(e) { /* 곡선 없어도 진행 */ }
+
+  // 4) 환율 (exchangerate.host - 무료, 키 불필요)
+  try {
+    const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    const d = await r.json();
+    if (d.rates && d.rates.KRW) {
+      state.usdkrw = d.rates.KRW;
+      ok.push('환율');
+    }
+  } catch(e) { fail.push('환율'); }
+
+  const note = document.getElementById('err-note');
+  if (fail.length) {
+    note.textContent = '⚠️ 자동 갱신 실패: ' + fail.join(', ') + ' (초기값/수동값 사용 중)';
+  } else {
+    note.textContent = '✓ 자동 지표 ' + ok.length + '종 갱신 완료';
+    setTimeout(() => { note.textContent = ''; }, 4000);
+  }
+
+  render();
+}
+
+// ============================================================
+// 파생 지표 계산
+// ============================================================
+function derive() {
+  const kospiDD = ((state.kospi - state.kospiAth) / state.kospiAth) * 100;
+  const spxDD = ((state.spx - state.spxAth) / state.spxAth) * 100;
+  const altSeason = state.btcDom > 60 ? 'BTC 시즌' : state.btcDom < 45 ? '알트 시즌' : '중립';
+  return { kospiDD, spxDD, altSeason };
+}
+
+// ============================================================
+// 비트코인 4년 주기 계산 (날짜 기반, 자동)
+// ============================================================
+const HALVING_4 = new Date('2024-04-19');
+const HALVING_5 = new Date('2028-04-17');
+const CYCLE_PHASES = [
+  { end: 22, key: 'accum',  name: '축적기',      color: '#5DCAA5', txt: '#04342C',
+    body: '반감기 직후 조용한 매집 구간. 변동성 낮고 관심 적음. 장기 축적에 유리.' },
+  { end: 40, key: 'early',  name: '상승 초입',    color: '#F0997B', txt: '#4A1B0C',
+    body: '본격 상승장 시작. 자금 유입 가속. 추세 추종에 유리한 구간.' },
+  { end: 55, key: 'peak',   name: '고점권',      color: '#EF9F27', txt: '#412402',
+    body: '반감기 12~18개월 고점 구간. 과열 주의. 분할 익절 고려 시점.' },
+  { end: 75, key: 'decline',name: '하락·조정',    color: '#F09595', txt: '#501313',
+    body: '고점 이후 냉각기. 조정 폭이 클 수 있음. 성급한 매수보다 관망 우세.' },
+  { end: 100,key: 'bottom', name: '바닥 다지기',  color: '#85B7EB', txt: '#042C53',
+    body: '다음 반감기를 향한 바닥권. 역사적으로 장기 분할매수(DCA)에 유리한 축적 구간.' },
+];
+
+const CYCLE_PEAK = new Date('2025-10-06');      // 4차 사이클 고점 (실제)
+const CYCLE_BOTTOM_EST = new Date('2027-01-15'); // 예상 저점 (고점 후 약 12개월)
+function datePct(d) {
+  return Math.max(0, Math.min(100, ((d - HALVING_4) / (HALVING_5 - HALVING_4)) * 100));
+}
+function cycleInfo() {
+  const now = new Date();
+  const total = HALVING_5 - HALVING_4;
+  const elapsed = now - HALVING_4;
+  let pct = (elapsed / total) * 100;
+  pct = Math.max(0, Math.min(100, pct));
+  const daysSince = Math.round(elapsed / 86400000);
+  const monthsSince = (daysSince / 30.44).toFixed(0);
+  const daysToNext = Math.max(0, Math.round((HALVING_5 - now) / 86400000));
+  const phase = CYCLE_PHASES.find(p => pct <= p.end) || CYCLE_PHASES[CYCLE_PHASES.length - 1];
+  return {
+    pct, daysSince, monthsSince, daysToNext, phase,
+    peakPct: datePct(CYCLE_PEAK),
+    bottomPct: datePct(CYCLE_BOTTOM_EST),
+    nowYm: now.toISOString().slice(0,7).replace('-','.')
+  };
+}
+
+// ============================================================
+// AI 판단 엔진 (규칙 기반)
+// ============================================================
+function decide() {
+  const { kospiDD, spxDD } = derive();
+  const opinions = [];
+  let score = 0; // 음수=위험, 양수=기회
+
+  // 규칙 1: 코스피 낙폭 → 매수 단계
+  if (kospiDD <= -45) {
+    opinions.push({ cls: 'ai-green', icon: '🟢', t: '5단계: 마지막 매수 100만원',
+      body: `코스피 ATH 대비 ${kospiDD.toFixed(1)}%. 극단적 저점. 마지막 실탄 투입 구간.` });
+    score += 3;
+  } else if (kospiDD <= -35) {
+    opinions.push({ cls: 'ai-green', icon: '🟢', t: '4단계: 레버리지 소액 포함 200만원',
+      body: `코스피 ${kospiDD.toFixed(1)}%. 깊은 조정. 레버리지 소액 진입 고려.` });
+    score += 2;
+  } else if (kospiDD <= -25) {
+    opinions.push({ cls: 'ai-green', icon: '🟢', t: '3단계: 핵심 매수 400만원',
+      body: `코스피 ${kospiDD.toFixed(1)}%. 핵심 매수 구간 진입. 우량주·반도체 분할.` });
+    score += 2;
+  } else if (kospiDD <= -15) {
+    opinions.push({ cls: 'ai-blue', icon: '🔵', t: '2단계: 광범위지수 200만원',
+      body: `코스피 ${kospiDD.toFixed(1)}%. 2단계 도달. TIGER 미국S&P500 등 분할매수 시작.` });
+    score += 1;
+  } else {
+    opinions.push({ cls: 'ai-blue', icon: '🔵', t: '1단계(현재): 방어자산 100만원 유지',
+      body: `코스피 ${kospiDD.toFixed(1)}%. 아직 본격 매수 신호 아님. 방어자산 유지.` });
+  }
+
+  // 규칙 2: 금 vs 코인 자금 흐름 방향타 (핵심)
+  const goldUp = state.goldChg >= 0;
+  const coinUp = state.btcChg >= 0;
+  if (goldUp && !coinUp) {
+    opinions.push({ cls: 'ai-gold', icon: '🪙', t: '자금 도피처: 금 (위험회피 국면)',
+      body: '금↑ 코인↓ → 돈이 금으로 도피 중. 코인은 아직 안전자산 대접 못 받음. 방어자산(ACE KRX금현물) 유지 타당. 공격적 매수 자제.' });
+    score -= 1;
+  } else if (!goldUp && coinUp) {
+    opinions.push({ cls: 'ai-green', icon: '🪙', t: '위험선호 복귀 (코인 매수 신호)',
+      body: '금↓ 코인↑ → 위험선호 심리 복귀. 자금이 안전자산에서 위험자산으로. 코인 분할매수 유효 구간.' });
+    score += 1;
+  } else if (goldUp && coinUp) {
+    opinions.push({ cls: 'ai-green', icon: '💧', t: '유동성 장세 (분할매수 적기)',
+      body: '금↑ 코인↑ → 유동성이 풍부한 위험선호 장세. 분할매수하기 좋은 구간.' });
+    score += 1;
+  } else {
+    opinions.push({ cls: 'ai-red', icon: '⚠️', t: '동반 약세 (전반적 위축)',
+      body: '금↓ 코인↓ → 전반적 자금 위축. 관망하며 저점 확인 필요.' });
+    score -= 1;
+  }
+
+  // 규칙 3: BTC 도미넌스 → 코인 내부 흐름
+  if (state.btcDom > 58) {
+    opinions.push({ cls: 'ai-gold', icon: '₿', t: `도미넌스 ${state.btcDom.toFixed(1)}% — BTC 집중`,
+      body: '자금이 BTC로 집중. 알트로 확산 안 됨. 코인 진입 시 BTC 우선, 알트는 도미넌스 꺾일 때까지 대기.' });
+  } else if (state.btcDom < 48) {
+    opinions.push({ cls: 'ai-green', icon: '₿', t: `도미넌스 ${state.btcDom.toFixed(1)}% — 알트 확산`,
+      body: '도미넌스 하락 = 알트시즌 신호. 자금이 알트로 확산 중. 위험선호 강함.' });
+  }
+
+  // 규칙 4: BTC 지지선
+  if (state.btc < 60000) {
+    opinions.push({ cls: 'ai-red', icon: '📉', t: 'BTC $60K 지지선 붕괴',
+      body: `현재 $${Math.round(state.btc).toLocaleString()}. 60K 붕괴로 추가 하락 위험. 매수는 신중히.` });
+    score -= 1;
+  } else if (state.btc > 65000) {
+    opinions.push({ cls: 'ai-green', icon: '📈', t: 'BTC $65K 돌파',
+      body: `현재 $${Math.round(state.btc).toLocaleString()}. 저항선 돌파로 단기 반등 시도.` });
+    score += 1;
+  }
+
+  // 규칙 5b: 4년 주기 국면 (해석 중심)
+  const cyc = cycleInfo();
+  const cycIconMap = { accum:'🌱', early:'📈', peak:'🔥', decline:'❄️', bottom:'⛏️' };
+  opinions.push({ cls: cyc.phase.key === 'bottom' || cyc.phase.key === 'accum' ? 'ai-green'
+                     : cyc.phase.key === 'decline' ? 'ai-red' : 'ai-gold',
+    icon: cycIconMap[cyc.phase.key] || '₿',
+    t: `4년 주기: ${cyc.phase.name} (${cyc.pct.toFixed(0)}% 지점)`,
+    body: `반감기 후 ${cyc.monthsSince}개월, 다음 반감기까지 ${cyc.daysToNext}일. ${cyc.phase.body}` });
+  if (cyc.phase.key === 'bottom') score += 1;
+  else if (cyc.phase.key === 'peak') score -= 1;
+
+  // 규칙 5: VIX 공포
+  if (state.vix >= 30) {
+    opinions.push({ cls: 'ai-green', icon: '😱', t: `VIX ${state.vix} — 공포 극대화`,
+      body: '변동성 급등. 역사적으로 좋은 분할매수 타이밍. 다만 하락 지속 여부 확인.' });
+    score += 1;
+  }
+
+  // 종합 판단
+  let verdict, sigCls, reason;
+  if (score >= 3) {
+    verdict = '적극 매수'; sigCls = 'sig-buy';
+    reason = '복수의 매수 신호가 겹칩니다. 계획된 분할매수 실행 구간입니다.';
+  } else if (score >= 1) {
+    verdict = '분할 매수'; sigCls = 'sig-buy';
+    reason = '매수 신호가 우세합니다. DCA 원칙에 따라 분할로 진입하세요.';
+  } else if (score <= -2) {
+    verdict = '경계'; sigCls = 'sig-caution';
+    reason = '위험 신호가 겹칩니다. 매수를 미루고 현금·방어자산 비중을 유지하세요.';
+  } else {
+    verdict = '관망'; sigCls = 'sig-wait';
+    reason = '뚜렷한 신호가 없습니다. 방어자산을 유지하며 트리거 도달을 기다리세요.';
+  }
+
+  return { opinions, verdict, sigCls, reason, score };
+}
+
+// ============================================================
+// 반원 게이지 SVG
+// ============================================================
+function gauge(pct, color) {
+  const p = Math.max(0, Math.min(100, pct));
+  const angle = -90 + (p / 100) * 180;
+  const rad = angle * Math.PI / 180;
+  const cx = 65, cy = 48, r = 40;
+  const nx = cx + r * Math.cos(rad);
+  const ny = cy + r * Math.sin(rad);
+  return `<svg class="gauge" viewBox="0 0 130 54">
+    <path d="M 25 48 A 40 40 0 0 1 105 48" fill="none" stroke="#2c3648" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 25 48 A 40 40 0 0 1 105 48" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"
+      stroke-dasharray="${(p/100)*125.6} 125.6"/>
+    <line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="3.5" fill="${color}"/>
+  </svg>`;
+}
+
+// 실제 가격 배열을 받아 미니 라인차트(SVG) 생성
+// 색은 첫값 대비 마지막값으로 자동 판정 (상승=빨강/하락=파랑, 국내 관례)
+function spark(prices, fallbackColor) {
+  if (!prices || prices.length < 2) {
+    return `<div class="spark-empty">데이터 수집 중…</div>`;
+  }
+  // 너무 촘촘하면 균등 샘플링 (최대 40포인트)
+  let pts = prices;
+  if (pts.length > 40) {
+    const step = pts.length / 40;
+    pts = Array.from({length: 40}, (_, i) => prices[Math.floor(i * step)]);
+  }
+  const min = Math.min(...pts), max = Math.max(...pts);
+  const range = max - min || 1;
+  const rising = pts[pts.length - 1] >= pts[0];
+  const color = rising ? 'var(--up)' : 'var(--down)';
+  const W = 100, H = 28;
+  const coords = pts.map((p, i) => {
+    const x = (i / (pts.length - 1)) * W;
+    const y = H - ((p - min) / range) * (H - 4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const line = coords.join(' ');
+  const area = `0,${H} ${line} ${W},${H}`;
+  return `<svg class="spark-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <polygon points="${area}" fill="${color}" opacity="0.12"/>
+    <polyline points="${line}" fill="none" stroke="${color}" stroke-width="1.5"
+      stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// ============================================================
+// 렌더링
+// ============================================================
+function render() {
+  const { kospiDD, spxDD, altSeason } = derive();
+  const upDown = v => v >= 0 ? 'up' : 'down';
+  const arrow = v => v >= 0 ? '▲' : '▼';
+  const fmt = v => v >= 0 ? '+' + v.toFixed(2) : v.toFixed(2);
+
+  // 게이지 색: 국내 관례 (상승/과열=빨강 --up, 하락/안정=파랑 --down), 중립=회색
+  const NEUTRAL = '#5a7fb0';
+  const cards = [
+    { label: '주식 · KOSPI', badge: 'semi',
+      value: state.kospi.toLocaleString(undefined,{maximumFractionDigits:0}),
+      change: `ATH대비 ${kospiDD.toFixed(1)}%`, changeCls: upDown(kospiDD),
+      meta: `S&P500: ${spxDD.toFixed(1)}%`,
+      // 게이지: 낙폭이 클수록 파랑 채움 (하락 관례). 값=하락률의 절대치를 0~50% 스케일
+      gauge: gauge(Math.min(50, Math.abs(kospiDD)) * 2, kospiDD < 0 ? 'var(--down)' : 'var(--up)'),
+      gaugeCap: `게이지: ATH 하락폭 (${Math.abs(kospiDD).toFixed(0)}%)` },
+    { label: '암호화폐 · BTC', badge: 'auto',
+      value: '$' + Math.round(state.btc).toLocaleString(),
+      change: `${arrow(state.btcChg)} ${fmt(state.btcChg)}%`, changeCls: upDown(state.btcChg),
+      meta: `ETH: $${Math.round(state.eth).toLocaleString()} (${fmt(state.ethChg)}%)`,
+      spark: spark(state.btcSpark), sparkCap: '최근 7일 실제 가격' },
+    { label: '금 현물 · XAU', badge: 'auto',
+      value: '$' + Math.round(state.gold).toLocaleString(),
+      change: `${arrow(state.goldChg)} ${fmt(state.goldChg)}%`, changeCls: upDown(state.goldChg),
+      meta: '안전자산 · 자금 도피처 지표',
+      spark: spark(state.goldSpark), sparkCap: '최근 7일 실제 가격' },
+    { label: 'BTC 도미넌스', badge: 'auto',
+      value: state.btcDom.toFixed(1) + '%',
+      change: altSeason, changeCls: state.btcDom > 55 ? 'up' : 'down',
+      meta: `ETH 도미넌스: ${state.ethDom.toFixed(1)}%`,
+      // 게이지 채움 = 도미넌스 실제 %, 색은 높으면(BTC집중) 빨강, 낮으면 파랑
+      gauge: gauge(state.btcDom, state.btcDom > 55 ? 'var(--up)' : 'var(--down)'),
+      gaugeCap: `게이지: 도미넌스 ${state.btcDom.toFixed(0)}%` },
+    { label: '심리 · VIX', badge: 'semi',
+      value: state.vix.toFixed(1),
+      change: state.vix >= 30 ? '공포 극대' : state.vix >= 20 ? '경계' : '안정',
+      changeCls: state.vix >= 20 ? 'up' : 'down',
+      meta: `공포·탐욕: ${state.fng} ${state.fng < 25 ? '(극단적 공포)' : state.fng > 75 ? '(극단적 탐욕)' : ''}`,
+      // 게이지 채움 = VIX를 0~40 스케일로, 색은 경계(20↑) 빨강 / 안정 파랑 — 글자와 일치
+      gauge: gauge(Math.min(100, (state.vix / 40) * 100), state.vix >= 20 ? 'var(--up)' : 'var(--down)'),
+      gaugeCap: `게이지: VIX (0~40 기준)` },
+    { label: '자금 · 환율', badge: 'auto',
+      value: '₩' + Math.round(state.usdkrw).toLocaleString(),
+      change: state.usdkrw > 1300 ? '원화 약세' : state.usdkrw > 1250 ? '약세 주의' : '보통',
+      changeCls: state.usdkrw > 1250 ? 'up' : 'down',
+      meta: `외국인: ${state.foreign >= 0 ? '+' : ''}${state.foreign.toLocaleString()}억`,
+      // 게이지 채움 = 환율을 1000~1400 범위로, 색은 고환율(원화약세) 빨강
+      gauge: gauge(Math.min(100, Math.max(0, (state.usdkrw - 1000) / 4)), state.usdkrw > 1250 ? 'var(--up)' : 'var(--down)'),
+      gaugeCap: `게이지: 원/달러 (1000~1400)` },
+  ];
+
+  document.getElementById('cards').innerHTML = cards.map(c => `
+    <div class="card">
+      <div class="label">
+        <span>${c.label}</span>
+        <span class="badge badge-${c.badge}">${c.badge === 'auto' ? '자동' : '수동'}</span>
+      </div>
+      <div class="value">${c.value}</div>
+      <div class="change ${c.changeCls}">${c.change}</div>
+      <div class="meta">${c.meta}</div>
+      ${c.gauge ? `<div class="gauge-wrap">${c.gauge}</div>` : ''}
+      ${c.spark || ''}
+      ${(c.gaugeCap || c.sparkCap) ? `<div class="viz-cap">${c.gaugeCap || c.sparkCap}</div>` : ''}
+    </div>
+  `).join('');
+
+  // AI 판단
+  const { opinions, verdict, sigCls, reason } = decide();
+  const sig = document.getElementById('signal');
+  sig.className = 'signal ' + sigCls;
+  document.getElementById('verdict').textContent = verdict;
+  document.getElementById('reason').textContent = reason;
+
+  document.getElementById('ai-opinions').innerHTML = opinions.map(o => `
+    <div class="ai-item ${o.cls}">
+      <div class="t">${o.icon} ${o.t}</div>
+      <div>${o.body}</div>
+    </div>
+  `).join('');
+
+  // 전략 단계
+  const stages = [
+    { n: 1, trig: '현재', amt: '방어자산 100만원', dd: 0 },
+    { n: 2, trig: '-15%', amt: '광범위지수 200만원', dd: -15 },
+    { n: 3, trig: '-25%', amt: '핵심 매수 400만원', dd: -25 },
+    { n: 4, trig: '-35%', amt: '레버리지 포함 200만원', dd: -35 },
+    { n: 5, trig: '-45%', amt: '마지막 100만원', dd: -45 },
+  ];
+  const worstDD = Math.min(kospiDD, spxDD);
+  document.getElementById('stages').innerHTML = stages.map(s => {
+    let numCls = '', badge = '', badgeStyle = '';
+    if (s.n === 1 && worstDD > -15) {
+      numCls = 'active'; badge = '현재 단계'; badgeStyle = 'background:var(--wait);color:#1a1000;';
+    } else if (worstDD <= s.dd && s.n > 1) {
+      numCls = 'reached'; badge = '도달'; badgeStyle = 'background:var(--buy);color:#001a0e;';
+    } else if (s.n === 1) {
+      numCls = 'active'; badge = '현재'; badgeStyle = 'background:var(--wait);color:#1a1000;';
+    }
+    return `<div class="stage-row">
+      <div class="stage-num ${numCls}">${s.n}</div>
+      <div class="stage-info">
+        <div>${s.amt}</div>
+        <div class="trig">트리거: ATH 대비 ${s.trig}</div>
+      </div>
+      ${badge ? `<span class="stage-badge" style="${badgeStyle}">${badge}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // 4년 주기 타임라인
+  const cyc = cycleInfo();
+  document.getElementById('cycle-pct').textContent = 'D+' + cyc.daysSince + '일 · ' + cyc.pct.toFixed(0) + '%';
+  const segsHtml = CYCLE_PHASES.map((p, i) => {
+    const prev = i === 0 ? 0 : CYCLE_PHASES[i-1].end;
+    const w = p.end - prev;
+    return `<div style="width:${w}%;background:${p.color};color:${p.txt};">${p.name}</div>`;
+  }).join('');
+  document.getElementById('cycle-track-wrap').innerHTML = `
+    <div class="cycle-nowlabel" style="left:${cyc.pct}%;">● 지금 · ${cyc.nowYm} (${cyc.monthsSince}개월차)</div>
+    <div class="cycle-dot" style="left:${cyc.pct}%;"></div>
+    <div class="cycle-vline" style="left:${cyc.pct}%;"></div>
+    <div class="cycle-track">${segsHtml}</div>
+    <div class="cycle-milestones">
+      <span class="ms" style="left:0%;"></span>
+      <span class="ms done" style="left:${cyc.peakPct}%;"></span>
+      <span class="ms est" style="left:${cyc.bottomPct}%;"></span>
+      <span class="ms" style="left:100%;"></span>
+    </div>
+    <div class="cycle-dates">
+      <span style="left:0%;">반감기<br><b>2024.04</b></span>
+      <span style="left:${cyc.peakPct}%;">고점 $126K<br><b>2025.10 ✓</b></span>
+      <span style="left:${cyc.bottomPct}%;">예상저점<br><b>2027.초</b></span>
+      <span style="left:100%;">반감기<br><b>2028.04</b></span>
+    </div>`;
+  const phaseColorMap = {
+    accum: ['rgba(93,202,165,0.14)', '#5DCAA5', '#8fe0c5'],
+    early: ['rgba(240,153,123,0.14)', '#F0997B', '#f0b39d'],
+    peak: ['rgba(239,159,39,0.14)', '#EF9F27', '#f0bd6a'],
+    decline: ['rgba(240,149,149,0.14)', '#F09595', '#f0b0b0'],
+    bottom: ['rgba(133,183,235,0.14)', '#85B7EB', '#a5cbf0'],
+  };
+  const pc = phaseColorMap[cyc.phase.key] || phaseColorMap.decline;
+  const phaseEl = document.getElementById('cycle-phase');
+  phaseEl.style.background = pc[0];
+  phaseEl.style.borderLeft = '3px solid ' + pc[1];
+  phaseEl.innerHTML = `
+    <div class="pt" style="color:${pc[2]};">현재 국면: ${cyc.phase.name}</div>
+    <div style="color:var(--text);opacity:0.9;">반감기 후 <b>${cyc.monthsSince}개월 경과</b>, 사이클 <b>${cyc.pct.toFixed(0)}% 지점</b>. 다음 반감기(2028.04)까지 ${cyc.daysToNext}일. ${cyc.phase.body}</div>`;
+
+  // 과거 사이클 비교표
+  const histEl = document.getElementById('cycle-hist');
+  if (histEl) {
+    histEl.innerHTML = `
+      <div class="hist-title">과거 사이클 이정표 (반감기→고점 패턴)</div>
+      <table class="hist-table">
+        <tr class="hh"><td>사이클</td><td>반감기</td><td>고점 시기</td><td>고점까지</td></tr>
+        <tr><td>2차</td><td>2016.07</td><td>2017.12</td><td>~17개월</td></tr>
+        <tr><td>3차</td><td>2020.05</td><td>2021.11</td><td>~18개월</td></tr>
+        <tr class="cur"><td>4차(현재)</td><td>2024.04</td><td>2025.10 ✓</td><td>~18개월</td></tr>
+      </table>
+      <div class="hist-note">역대 고점은 반감기 후 17~18개월. 이번 4차도 동일 패턴으로 고점 통과 → 현재는 그 이후 국면.</div>`;
+  }
+
+  // 시각
+  const now = new Date();
+  document.getElementById('live-time').textContent =
+    now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' 갱신';
+}
+
+// ============================================================
+// 수동 입력 저장
+// ============================================================
+document.getElementById('save-btn').addEventListener('click', () => {
+  const g = (id) => {
+    const v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) ? null : v;
+  };
+  const map = {
+    'in-kospi': 'kospi', 'in-kospi-ath': 'kospiAth',
+    'in-spx': 'spx', 'in-spx-ath': 'spxAth',
+    'in-vix': 'vix', 'in-fng': 'fng', 'in-foreign': 'foreign', 'in-gold': 'gold'
+  };
+  for (const [id, key] of Object.entries(map)) {
+    const v = g(id);
+    if (v !== null) state[key] = v;
+  }
+  window.__memState = { ...state };  // 세션 내 유지
+  render();
+  const note = document.getElementById('err-note');
+  note.textContent = '✓ 입력값 저장 완료, 재판단했습니다';
+  setTimeout(() => { note.textContent = ''; }, 3000);
+});
+
+// ============================================================
+// 시작
+// ============================================================
+document.getElementById('build-date').textContent =
+  '빌드: 2026-07-20 · 30초마다 자동 갱신';
+render();          // 초기값으로 즉시 렌더
+fetchAll();        // 실시간 데이터 가져오기
+setInterval(fetchAll, 30000);  // 30초마다 갱신
+</script>
+</body>
+</html>
