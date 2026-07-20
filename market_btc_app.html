@@ -112,6 +112,22 @@
   .rbrow .mk{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono';
     font-size:10px;font-weight:700;color:#fff;background:rgba(0,0,0,.45);padding:2px 6px;border-radius:20px}
   .rbnote{font-size:9.5px;color:#5b6678;margin-top:7px;line-height:1.4}
+  .cyc-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
+  .cyc-stat{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .cyc-stat .k{font-size:9px;color:var(--mut)}
+  .cyc-stat .v{font-size:13px;font-weight:700;margin-top:2px}
+  .cycbar{display:flex;height:42px;border-radius:9px;overflow:hidden;position:relative;margin:16px 0 4px}
+  .cycseg{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#0a0e14;text-align:center;line-height:1.15;padding:0 2px;overflow:hidden}
+  .cycnow{position:absolute;top:-7px;bottom:-7px;width:2px;background:#fff;box-shadow:0 0 6px #fff;z-index:2}
+  .cycnow::after{content:"NOW";position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:900;background:#fff;color:#0a0e14;padding:1px 5px;border-radius:5px;white-space:nowrap}
+  .cyctimeline{display:flex;font-size:8px;color:var(--mut);margin-bottom:11px}
+  .cyclist{display:flex;flex-direction:column;gap:4px}
+  .cycrow{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,.02);border-left:3px solid;font-size:11px}
+  .cycrow.on{background:rgba(255,255,255,.08);box-shadow:0 0 0 1.5px rgba(255,255,255,.3) inset}
+  .cycrow .cn{font-weight:700;flex:0 0 auto}
+  .cycrow .cbody{flex:1}
+  .cycrow .cp{font-size:9px;color:var(--mut);margin-top:1px}
+  .cycrow .ca{font-size:10px;color:#cdd6e2;margin-top:2px;line-height:1.35}
 
   .eval{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
   .eval h2{font-family:'Bebas Neue';font-size:19px;color:var(--gold);margin-bottom:6px}
@@ -206,31 +222,43 @@
     <div class="rainbow" id="rainbow"></div>
     <div class="rbnote">※ 근사치·참고용. 2021·2025 고점=최상단, 2022 바닥=최하단 보정. 원 사이트와 정확히 일치하지 않으며 구간 판정용입니다.</div>
 
+    <div class="secttitle b">반감기 4년 주기 사이클 <span class="w">현재 위치 자동 계산</span></div>
+    <div class="cyc-stats">
+      <div class="cyc-stat"><div class="k">현재가 (원화)</div><div class="v" id="cycKrw">…</div></div>
+      <div class="cyc-stat"><div class="k">현재 단계</div><div class="v" id="cycStage">…</div></div>
+      <div class="cyc-stat"><div class="k">로드맵 진척도</div><div class="v" id="cycProg">…</div></div>
+      <div class="cyc-stat"><div class="k">차세대 불장 피크까지</div><div class="v" id="cycPeak" style="color:var(--gold)">…</div></div>
+    </div>
+    <div class="cycbar" id="cycBar"></div>
+    <div class="cyctimeline" id="cycTimeline"></div>
+    <div class="cyclist" id="cycList"></div>
+    <div class="rbnote">※ 추정·참고용. 4년 반감기 주기의 과거 패턴 기반 모델이며, 미래 단계(회복·차세대 불장) 시점은 추정치입니다. ETF 도입 이후 주기가 과거와 다를 수 있습니다.</div>
+
     <div class="secttitle b">비트코인 실시간 <span class="w">자동 갱신</span></div>
     <div class="grid">
       <div class="card auto"><span class="tag tag-auto">LIVE</span><div class="name">일간 RSI(14)</div><div class="sub">과매도<30</div><div class="val skel" id="rsiVal">…</div><div class="note" id="rsiNote">직접 계산</div></div>
       <div class="card auto"><span class="tag tag-auto">LIVE</span><div class="name">ATH 하락폭</div><div class="sub">고점 $126.2K</div><div class="val skel" id="ddVal">…</div><div class="note" id="ddNote">…</div></div>
     </div>
 
-    <div class="secttitle b">심층 지표 <span class="w">Claude 갱신 · 2026-06-10</span></div>
+    <div class="secttitle b">심층 지표 <span class="w">Claude 갱신 · 2026-07-20</span></div>
     <div class="grid">
-      <div class="card manual"><span class="tag tag-man">06-10</span><div class="name">연준/금리</div><div class="sub">거시</div><div class="val" style="font-size:15px;color:var(--up)">인상 우려</div><div class="note">6/5 고용 최강→인상 기대</div></div>
-      <div class="card manual"><span class="tag tag-man">06-10</span><div class="name">현물 ETF</div><div class="sub">수급</div><div class="val" style="color:var(--down)">유출</div><div class="note">13일+ 연속(6/6 $4.33B)</div></div>
-      <div class="card manual"><span class="tag tag-man">06-10</span><div class="name">MVRV Z</div><div class="sub">밸류</div><div class="val" style="color:var(--down)">~0.34</div><div class="note">저평가권</div></div>
-      <div class="card manual"><span class="tag tag-man">06-10</span><div class="name">달러 DXY</div><div class="sub">거시</div><div class="val">~99.5</div><div class="note">강세, BTC 부담</div></div>
-      <div class="card manual"><span class="tag tag-man">06-10</span><div class="name">알트시즌</div><div class="sub">순환</div><div class="val">~30</div><div class="note">BTC 시즌</div></div>
-      <div class="card manual"><span class="tag tag-man">06-10</span><div class="name">제도 촉매</div><div class="sub">장기</div><div class="val" style="font-size:14px;color:var(--up)">상원 법안</div><div class="note">은행 BTC 규제완화</div></div>
+      <div class="card manual"><span class="tag tag-man">07-20</span><div class="name">연준/금리</div><div class="sub">거시</div><div class="val" style="font-size:13px;color:var(--txt)">동결·1회 인하</div><div class="note">3.50~3.75% 동결, 연내 1회 인하 전망</div></div>
+      <div class="card manual"><span class="tag tag-man">07-20</span><div class="name">현물 ETF</div><div class="sub">수급</div><div class="val" style="font-size:15px;color:var(--up)">유입 전환</div><div class="note">8주 유출 종료, 7월 2주 연속 순유입</div></div>
+      <div class="card manual"><span class="tag tag-man">07-20</span><div class="name">MVRV Z</div><div class="sub">밸류</div><div class="val" style="color:var(--down)">0.37</div><div class="note">저평가권(실현가 $52.5K)</div></div>
+      <div class="card manual"><span class="tag tag-man">07-20</span><div class="name">달러 DXY</div><div class="sub">거시</div><div class="val">~100.9</div><div class="note">고점서 냉각 중</div></div>
+      <div class="card manual"><span class="tag tag-man">07-20</span><div class="name">알트시즌</div><div class="sub">순환</div><div class="val">~35</div><div class="note">BTC 시즌(일부 알트 강세)</div></div>
+      <div class="card manual"><span class="tag tag-man">07-20</span><div class="name">제도 촉매</div><div class="sub">장기</div><div class="val" style="font-size:14px;color:var(--up)">상원 법안</div><div class="note">은행 BTC 규제완화</div></div>
     </div>
 
     <div class="eval">
       <h2>비트코인 종합평가</h2>
       <div class="bl">요약</div>
-      <p>BTC <span id="evPx">$61,655</span> 부근, <strong>$60K 지지선</strong> 방어 · ATH 대비 <span id="evDd">−51%</span>. 크립토 공포·탐욕 <span class="hl-d">투매권</span>, 밸류·RSI 과매도. 단 <span class="hl-u">금리 인상 우려·ETF 유출</span>로 추세 반전 미확인.</p>
+      <p>BTC <span id="evPx">$64,653</span> 부근, <strong>$60K 지지선 회복</strong> · ATH 대비 <span id="evDd">−49%</span>. 크립토 공포·탐욕 29(공포·회복세), MVRV 0.37 저평가권. <span class="hl-u">ETF 8주 유출 종료·2주 연속 유입</span>이 긍정 전환이나, $65.5K 돌파 확인 전까진 반등 강도 제한적.</p>
       <div class="bl">결론 및 대응</div>
       <ul>
         <li><b>규칙적 분할 축적</b> 유지. 추격 매수 금물.</li>
-        <li><b>$60K 사수</b> 여부가 분수령. 이탈 시 $55K 주의.</li>
-        <li>반전 1차 신호 = <b>ETF 순유입 전환(+)</b>.</li>
+        <li><b>$65~65.5K 돌파</b> 시 추세 전환 확인. 실패 시 $60K 재확인.</li>
+        <li>ETF 순유입 <b>지속 여부</b>가 관건 (YTD 여전히 −$5.2B).</li>
         <li>레인보우 "Still cheap" 구간 — 역사적 저평가권.</li>
       </ul>
     </div>
@@ -248,7 +276,7 @@
 // ── 저장(hosted 환경에서 동작, 샌드박스에선 무시) ──
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
-const MAN_KEYS={kospiIn:'-1.5',spxIn:'-1.0',vixIn:'16.5',wtiIn:'91',frgIn:'-2.5',capeIn:'41.4'};
+const MAN_KEYS={kospiIn:'-27.3',spxIn:'-2.1',vixIn:'18.8',wtiIn:'80',frgIn:'-3.0',capeIn:'41.3'};
 function initManual(){for(const k in MAN_KEYS){document.getElementById(k).value=lsGet('m_'+k,MAN_KEYS[k]);}}
 function saveManual(){for(const k in MAN_KEYS){lsSet('m_'+k,document.getElementById(k).value);}renderManual();computeSignal();}
 
@@ -317,6 +345,37 @@ function renderRainbow(price){
     row.innerHTML='<span class="lab" style="color:'+RB_BANDS[k].c+'">'+RB_BANDS[k].l+'</span><span class="rng">'+rng+'</span>'+(k===idx?'<span class="mk">◀ '+fmtUSD(price)+'</span>':'');
     wrap.appendChild(row);
   }
+}
+
+// ── 반감기 4년 주기 사이클 ──
+const CYC_START_M=2024*12+3; // 2024-04 (0-idx month 3 = April)
+const CYC_SPANS=[17,9,12,10,17], CYC_TOTAL=65, CYC_END_LABEL='2029.09';
+const CYC_STAGES=[
+  {n:'1단계',t:'제4주기 급등',c:'#e0568a',d:'2024.04',act:'최고점 경신 랠리 — 분할 익절·현금 확보'},
+  {n:'2단계',t:'제4주기 하락',c:'#3b82f6',d:'2025.09',act:'고점 대비 조정 — 방어자산 비중 확대'},
+  {n:'3단계',t:'제4주기 매집(암흑기)',c:'#8b5cf6',d:'2026.06',act:'저평가·암흑기 — 규칙적 분할 매집(핵심 축적)'},
+  {n:'4단계',t:'제4주기 회복',c:'#22c55e',d:'2027.06',act:'제5반감기 앞두고 회복 — 보유 유지·추가 매집'},
+  {n:'5단계',t:'제5주기 차세대 불장',c:'#f0b429',d:'2028.04',act:'제5반감기 후 불장 — 단계적 익절 준비'}
+];
+function renderCycle(btcKrw){
+  const now=new Date();
+  const monElapsed=(now.getFullYear()*12+now.getMonth())-CYC_START_M+(now.getDate()-1)/30.44;
+  const pct=Math.max(0,Math.min(100,monElapsed/CYC_TOTAL*100));
+  let cum=0,idx=0;for(let i=0;i<5;i++){if(monElapsed>=cum&&monElapsed<cum+CYC_SPANS[i])idx=i;cum+=CYC_SPANS[i];}
+  if(monElapsed>=CYC_TOTAL)idx=4;if(monElapsed<0)idx=0;
+  const S=CYC_STAGES[idx];
+  if(btcKrw){document.getElementById('cycKrw').textContent='₩'+Math.round(btcKrw).toLocaleString();}
+  else{document.getElementById('cycKrw').textContent='—';}
+  const cs=document.getElementById('cycStage');cs.textContent=S.n+' '+S.t.replace(/제[45]주기 /,'');cs.style.color=S.c;
+  document.getElementById('cycProg').textContent='65개월 중 '+Math.floor(Math.max(0,monElapsed))+'개월 ('+pct.toFixed(1)+'%)';
+  const monToPeak=Math.max(0,CYC_TOTAL-monElapsed),daysToPeak=Math.round(monToPeak*30.44);
+  document.getElementById('cycPeak').textContent='약 '+Math.round(monToPeak)+'개월 ('+daysToPeak.toLocaleString()+'일)';
+  const bar=document.getElementById('cycBar');bar.innerHTML='';
+  CYC_STAGES.forEach((s,i)=>{const seg=document.createElement('div');seg.className='cycseg';seg.style.flex=CYC_SPANS[i]+' 0 0';seg.style.background=s.c;seg.style.opacity=(i===idx)?'1':'0.45';seg.innerHTML='<span>'+s.n+'<br>'+(CYC_SPANS[i]/CYC_TOTAL*100).toFixed(1)+'%</span>';bar.appendChild(seg);});
+  const nm=document.createElement('div');nm.className='cycnow';nm.style.left=pct+'%';bar.appendChild(nm);
+  document.getElementById('cycTimeline').innerHTML=CYC_STAGES.map((s,i)=>'<span style="flex:'+CYC_SPANS[i]+' 0 0;text-align:left">'+s.d+'</span>').join('')+'<span style="flex:0 0 auto">'+CYC_END_LABEL+'</span>';
+  const list=document.getElementById('cycList');list.innerHTML='';
+  CYC_STAGES.forEach((s,i)=>{const st=i<idx?'(과거)':i===idx?'(현재)':'(예정)';const row=document.createElement('div');row.className='cycrow'+(i===idx?' on':'');row.style.borderLeftColor=s.c;row.innerHTML='<span class="cn" style="color:'+s.c+'">'+s.n+'</span><div class="cbody"><div><b>'+s.t+'</b> '+st+' · '+(CYC_SPANS[i]/CYC_TOTAL*100).toFixed(1)+'%</div><div class="cp">'+s.d+' 시작</div><div class="ca">'+s.act+'</div></div>';list.appendChild(row);});
 }
 
 // ── 수동 지표 렌더 ──
@@ -431,6 +490,7 @@ async function loadLive(){
     document.getElementById('ddNote').textContent=dd<=-45?'-45% 돌파':dd<=-35?'-35~-45%':dd<=-25?'-25~-35%':dd<=-15?'-15~-25%':'고점권';
     // 레인보우 + BTC 평가 시세
     renderRainbow(btc);
+    try{renderCycle(krw?btc*krw:null);}catch(e){}
     document.getElementById('evPx').textContent=fmtUSD(btc);
     document.getElementById('evDd').textContent=dd.toFixed(0)+'%';
 
@@ -442,7 +502,7 @@ async function loadLive(){
   }finally{b.disabled=false;}
 }
 
-initManual();renderManual();loadLive();
+initManual();renderManual();try{renderCycle(null);}catch(e){}loadLive();
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadLive();});
 </script>
 </body>
