@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0e14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -35,13 +35,20 @@
   .up{color:var(--up)}.down{color:var(--down)}
 
   /* 종합 신호등 */
-  .signal{border-radius:16px;padding:15px 17px;margin-bottom:11px;display:flex;gap:14px;align-items:center;
-    border:1px solid var(--line);box-shadow:0 6px 22px rgba(0,0,0,.35)}
-  .signal .light{width:58px;height:58px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
-    font-family:'Bebas Neue';font-size:15px;color:#0a0e14;font-weight:700;text-align:center;line-height:.95}
-  .signal .txt .verdict{font-size:22px;font-weight:900;line-height:1.1}
-  .signal .txt .reason{font-size:12px;color:#cdd6e2;margin-top:3px}
-  .signal .txt .sub{font-size:10.5px;color:var(--mut);margin-top:3px}
+  .signal2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
+  .sigcard{border-radius:14px;padding:12px 13px;display:flex;gap:11px;align-items:center;
+    background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+  .sigcard .light{width:46px;height:46px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    font-family:'Bebas Neue';font-size:13px;color:#0a0e14;font-weight:700;text-align:center;line-height:.9}
+  .sigcard .txt{min-width:0}
+  .sigcard .head{font-size:10px;color:var(--mut);font-weight:700}
+  .sigcard .verdict{font-size:19px;font-weight:900;line-height:1.1}
+  .sigcard .reason{font-size:10px;color:#cdd6e2;margin-top:2px;line-height:1.3}
+  .sigcard .target{font-size:9.5px;color:var(--gold);margin-top:3px;font-weight:700}
+  @media(max-width:430px){.signal2{grid-template-columns:1fr}}
+  .updbar{background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.25);border-radius:10px;
+    padding:8px 12px;font-size:10.5px;color:#cdd6e2;margin-bottom:10px;line-height:1.5}
+  .updbar b{color:var(--watch)}.updbar .g{color:var(--buy);font-weight:700}
 
   .btnrow{display:flex;gap:8px;align-items:center;margin-bottom:10px}
   button.refresh{font-family:'Noto Sans KR';font-weight:700;font-size:14px;cursor:pointer;flex:1;
@@ -150,15 +157,28 @@
     <h1>시장감시 <span>+</span> 비트코인</h1>
   </div>
 
-  <!-- 통합 종합 신호등 -->
-  <div class="signal" id="signalBox">
-    <div class="light skel" id="sigLight">…</div>
-    <div class="txt">
-      <div class="verdict skel" id="sigVerdict">판단 중…</div>
-      <div class="reason" id="sigReason">지표를 종합하는 중입니다.</div>
-      <div class="sub" id="sigSub">코인·환율 자동 + 지수 입력값 기준</div>
+  <!-- 신호등: 주식 / 코인 분리 -->
+  <div class="signal2">
+    <div class="sigcard">
+      <div class="light skel" id="stLight">…</div>
+      <div class="txt">
+        <div class="head">📈 주식 신호</div>
+        <div class="verdict skel" id="stVerdict">…</div>
+        <div class="reason" id="stReason">지수 판단 중…</div>
+        <div class="target">→ 국내 주식·광범위지수</div>
+      </div>
+    </div>
+    <div class="sigcard">
+      <div class="light skel" id="coLight">…</div>
+      <div class="txt">
+        <div class="head">₿ 코인 신호</div>
+        <div class="verdict skel" id="coVerdict">…</div>
+        <div class="reason" id="coReason">코인 판단 중…</div>
+        <div class="target">→ 비트코인</div>
+      </div>
     </div>
   </div>
+  <div class="updbar"><span class="g">● 자동 지표</span> = 열 때마다 실시간 · <b>● 심층지표</b> Claude 갱신: <b>2026-07-20</b> · 매주 정기 갱신 예정</div>
 
   <div class="btnrow">
     <button class="refresh" id="refresh" onclick="loadLive()">↻ 지금 갱신</button>
@@ -238,6 +258,7 @@
     <div class="grid">
       <div class="card auto"><span class="tag tag-auto">LIVE</span><div class="name">일간 RSI(14)</div><div class="sub">과매도<30</div><div class="val skel" id="rsiVal">…</div><div class="note" id="rsiNote">직접 계산</div></div>
       <div class="card auto"><span class="tag tag-auto">LIVE</span><div class="name">ATH 하락폭</div><div class="sub">고점 $126.2K</div><div class="val skel" id="ddVal">…</div><div class="note" id="ddNote">…</div></div>
+      <div class="card auto"><span class="tag tag-auto">LIVE</span><div class="name">Mayer 배수</div><div class="sub">200일선 대비</div><div class="val skel" id="mayerVal">…</div><div class="note" id="mayerNote">가격÷200일평균</div></div>
     </div>
 
     <div class="secttitle b">심층 지표 <span class="w">Claude 갱신 · 2026-07-20</span></div>
@@ -278,7 +299,7 @@ function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}cat
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 const MAN_KEYS={kospiIn:'-27.3',spxIn:'-2.1',vixIn:'18.8',wtiIn:'80',frgIn:'-3.0',capeIn:'41.3'};
 function initManual(){for(const k in MAN_KEYS){document.getElementById(k).value=lsGet('m_'+k,MAN_KEYS[k]);}}
-function saveManual(){for(const k in MAN_KEYS){lsSet('m_'+k,document.getElementById(k).value);}renderManual();computeSignal();}
+function saveManual(){for(const k in MAN_KEYS){lsSet('m_'+k,document.getElementById(k).value);}renderManual();computeSignals();}
 
 // ── 탭 ──
 function showTab(t){
@@ -332,7 +353,7 @@ const RB_BANDS=[
 function rbBoundaries(){const days=(Date.now()-RB_START)/86400000,L=RB_A*Math.log(days),b=[];for(let k=0;k<=9;k++)b.push(Math.pow(10,L+RB_BBOT+k*RB_W));return b;}
 function rbFmt(n){return n>=1000?'$'+Math.round(n/1000)+'K':'$'+Math.round(n);}
 function renderRainbow(price){
-  const b=rbBoundaries();let idx=0;for(let k=0;k<9;k++){if(price>=b[k])idx=k;}if(price>=b[9])idx=8;if(price<b[0])idx=0;
+  const b=rbBoundaries();let idx=0;for(let k=0;k<9;k++){if(price>=b[k])idx=k;}if(price>=b[9])idx=8;if(price<b[0])idx=0;LIVE.rbIdx=idx;
   const band=RB_BANDS[idx],cur=document.getElementById('rbCur');
   cur.textContent=band.l;cur.style.color=band.c;cur.classList.remove('skel');
   document.getElementById('rbMeta').textContent='밴드 '+(idx+1)+'/9 · '+band.m;
@@ -416,29 +437,41 @@ function renderLadder(kospi,spx){
 
 // ── 종합 신호등 + AI 규칙엔진 ──
 let LIVE={};
-function computeSignal(){
+function computeSignals(){computeStockSignal();computeCoinSignal();}
+function setSig(p,v,c,r){
+  const L=document.getElementById(p+'Light');L.textContent=v;L.style.background=c;L.classList.remove('skel');
+  const V=document.getElementById(p+'Verdict');V.textContent=v;V.style.color=c;V.classList.remove('skel');
+  document.getElementById(p+'Reason').textContent=r;
+}
+function computeStockSignal(){
   const kospi=num('kospiIn'),spx=num('spxIn'),vix=num('vixIn');
   const worst=Math.min(kospi,spx);
-  const btc=LIVE.btc, cfng=LIVE.fng;
-  let verdict,color,reason,ai=[];
-  // 단계 판정
-  if(worst<=-25){verdict='매수';color='var(--buy)';reason='지수 '+stageOf(worst)+' 진입 — 핵심 매수 구간';}
-  else if(worst<=-15){verdict='매수';color='var(--buy)';reason='지수 2단계 — 광범위지수 매수 신호';}
-  else if(vix>=30){verdict='매수';color='var(--buy)';reason='VIX '+vix.toFixed(0)+' 공포 극대 — 분할매수 적기';}
-  else if(btc!==undefined && btc<60000){verdict='경계';color='var(--caution)';reason='BTC $60K 지지선 이탈 — 추가하락 주의';}
-  else if(cfng!==undefined && cfng>=75){verdict='경계';color='var(--caution)';reason='크립토 탐욕 과열 — 신규 진입 신중';}
-  else {verdict='관망';color='var(--watch)';reason='지수 안정권 — 방어자산 100만원 유지'+(cfng!==undefined&&cfng<=10?' (코인은 역발상 관심권)':'');}
-  const L=document.getElementById('sigLight');L.textContent=verdict;L.style.background=color;L.classList.remove('skel');
-  const V=document.getElementById('sigVerdict');V.textContent=verdict;V.style.color=color;V.classList.remove('skel');
-  document.getElementById('sigReason').textContent=reason;
-
-  // AI 규칙 리스트
+  let v,c,r;
+  if(worst<=-45){v='매수';c='var(--buy)';r=stageOf(worst)+' 마지막 매수(100만원)';}
+  else if(worst<=-35){v='매수';c='var(--buy)';r=stageOf(worst)+' 레버리지 포함(200만원)';}
+  else if(worst<=-25){v='매수';c='var(--buy)';r=stageOf(worst)+' 핵심매수(400만원)';}
+  else if(worst<=-15){v='매수';c='var(--buy)';r='2단계 광범위지수(200만원)';}
+  else if(vix>=30){v='매수';c='var(--buy)';r='VIX '+vix.toFixed(0)+' 공포 극대 — 분할매수';}
+  else {v='관망';c='var(--watch)';r='지수 안정권 — 방어자산 100만원 유지';}
+  setSig('st',v,c,r);
+  const btc=LIVE.btc,cfng=LIVE.fng,ai=[];
   ai.push('KOSPI '+kospi.toFixed(1)+'% · S&P '+spx.toFixed(1)+'% → 낮은 쪽 '+stageOf(worst));
-  if(btc!==undefined) ai.push('BTC '+fmtUSD(btc)+(btc<60000?' <span class="badge" style="background:rgba(249,115,22,.2);color:var(--caution)">지지선 경계</span>':' <span class="badge" style="background:rgba(59,130,246,.2);color:var(--down)">안정</span>'));
-  if(cfng!==undefined) ai.push('크립토 공포탐욕 '+cfng+(cfng<=10?' <span class="badge" style="background:rgba(34,197,94,.2);color:var(--buy)">역발상 관심</span>':''));
   ai.push('VIX '+vix.toFixed(1)+(vix>=30?' <span class="badge" style="background:rgba(34,197,94,.2);color:var(--buy)">분할매수 적기</span>':' <span class="badge" style="background:rgba(125,138,160,.2);color:var(--mut)">평온</span>'));
-  ai.push('다음 트리거: '+nextTrigger(worst));
+  if(btc!==undefined) ai.push('BTC '+fmtUSD(btc)+(btc<60000?' <span class="badge" style="background:rgba(249,115,22,.2);color:var(--caution)">지지선 경계</span>':' <span class="badge" style="background:rgba(59,130,246,.2);color:var(--down)">안정</span>'));
+  if(cfng!==undefined) ai.push('크립토 공포탐욕 '+cfng+(cfng<=24?' <span class="badge" style="background:rgba(34,197,94,.2);color:var(--buy)">역발상 관심</span>':''));
+  if(LIVE.mayer!=null) ai.push('Mayer '+LIVE.mayer.toFixed(2)+(LIVE.mayer<1?' <span class="badge" style="background:rgba(59,130,246,.2);color:var(--down)">200일선 아래·저평가</span>':''));
+  ai.push('주식 다음 트리거: '+nextTrigger(worst));
   document.getElementById('aiList').innerHTML=ai.map(x=>'<li>'+x+'</li>').join('');
+}
+function computeCoinSignal(){
+  const btc=LIVE.btc,fng=LIVE.fng,rb=LIVE.rbIdx,mayer=LIVE.mayer;
+  if(btc===undefined){setSig('co','대기','var(--mut)','데이터 로딩 중');return;}
+  let v,c,r;
+  if((fng!=null&&fng>=75)||(rb!=null&&rb>=7)){v='경계';c='var(--caution)';r='과열('+((rb!=null&&rb>=7)?'레인보우 상단':'탐욕 '+fng)+') — 신규 진입 신중';}
+  else if(btc<60000){v='경계';c='var(--caution)';r='$60K 지지선 이탈 — 추가하락 주의';}
+  else if((fng!=null&&fng<=24)||(rb!=null&&rb<=3)||(mayer!=null&&mayer<1)){v='매수';c='var(--buy)';r='공포·저평가 — 규칙적 분할 축적 적기';}
+  else {v='관망';c='var(--watch)';r='중립 — 분할 축적 유지';}
+  setSig('co',v,c,r);
 }
 function nextTrigger(worst){
   if(worst>-15)return 'KOSPI/S&P −15% 도달 시 2단계 매수';
@@ -459,15 +492,15 @@ async function loadLive(){
       fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true&include_market_cap=true'),
       fetch('https://api.coingecko.com/api/v3/global'),
       fetch('https://api.alternative.me/fng/?limit=1'),
-      fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=21'),
+      fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=200'),
       fetch('https://open.er-api.com/v6/latest/USD').catch(()=>null)
     ]);
     const p=await pR.json(),g=await gR.json(),f=await fR.json(),m=await mR.json();
     const btc=p.bitcoin.usd,eth=p.ethereum.usd,btcChg=p.bitcoin.usd_24h_change,ethChg=p.ethereum.usd_24h_change;
     const dom=g.data.market_cap_percentage.btc,eb=eth/btc,dd=(btc-ATH)/ATH*100,fng=parseInt(f.data[0].value);
-    let rsi=null;try{const bd={};m.prices.forEach(a=>{bd[new Date(a[0]).toISOString().slice(0,10)]=a[1];});rsi=computeRSI(Object.keys(bd).sort().map(k=>bd[k]),14);}catch(e){}
+    let rsi=null,mayer=null;try{const bd={};m.prices.forEach(a=>{bd[new Date(a[0]).toISOString().slice(0,10)]=a[1];});const cl=Object.keys(bd).sort().map(k=>bd[k]);rsi=computeRSI(cl,14);const w=cl.slice(-200);mayer=btc/(w.reduce((s,v)=>s+v,0)/w.length);}catch(e){}
     let krw=null;try{if(xR){const x=await xR.json();krw=x.rates.KRW;}}catch(e){}
-    LIVE={btc:btc,eth:eth,fng:fng,dom:dom,rsi:rsi};
+    LIVE={btc:btc,eth:eth,fng:fng,dom:dom,rsi:rsi,mayer:mayer};
 
     // 국내 관례: 상승=빨강
     const bv=document.getElementById('btcVal');bv.textContent=fmtUSD(btc);bv.style.color=colOf(btcChg);bv.classList.remove('skel');
@@ -488,17 +521,18 @@ async function loadLive(){
     if(rsi!==null){const rv=document.getElementById('rsiVal');rv.textContent=rsi.toFixed(1);rv.classList.remove('skel');rv.style.color=rsi<30?'var(--down)':rsi>70?'var(--up)':'var(--txt)';document.getElementById('rsiNote').textContent=rsi<30?'과매도':rsi>70?'과매수':'중립';}
     const dv=document.getElementById('ddVal');dv.textContent=dd.toFixed(1)+'%';dv.classList.remove('skel');dv.style.color=colOf(dd);
     document.getElementById('ddNote').textContent=dd<=-45?'-45% 돌파':dd<=-35?'-35~-45%':dd<=-25?'-25~-35%':dd<=-15?'-15~-25%':'고점권';
+    if(mayer!=null){const mv=document.getElementById('mayerVal');mv.textContent=mayer.toFixed(2);mv.classList.remove('skel');mv.style.color=mayer<1?'var(--down)':mayer>2.4?'var(--up)':'var(--txt)';document.getElementById('mayerNote').textContent=mayer<1?'200일선 아래·저평가':mayer>2.4?'과열권(>2.4)':'중립';}
     // 레인보우 + BTC 평가 시세
     renderRainbow(btc);
     try{renderCycle(krw?btc*krw:null);}catch(e){}
     document.getElementById('evPx').textContent=fmtUSD(btc);
     document.getElementById('evDd').textContent=dd.toFixed(0)+'%';
 
-    computeSignal();
+    computeSignals();
     st.innerHTML='<span class="dot"></span>정상 '+new Date().toLocaleTimeString('ko-KR');
   }catch(e){
     st.innerHTML='<span class="dot" style="background:var(--up);box-shadow:0 0 7px var(--up)"></span>연결 실패';
-    computeSignal();
+    computeSignals();
   }finally{b.disabled=false;}
 }
 
