@@ -288,7 +288,7 @@
 <!-- 수동 입력 (반자동 지표) -->
 <div class="manual">
   <h2>✏️ 지수·심리 지표 입력</h2>
-  <div class="hint">코인·도미넌스·금·환율은 자동 갱신됩니다. 아래 4개는 무료 실시간 API가 제한적이라 직접 입력하세요 (개장 시 하루 1회면 충분).</div>
+  <div class="hint">자동 지표(코인·도미넌스·금·환율)는 CORS 프록시로 갱신을 시도합니다. 프록시가 막히거나 값이 이상하면, 아래에서 직접 보정하세요. 지수·VIX·공포탐욕·외국인은 무료 실시간 API가 없어 수동 입력이 기본입니다.</div>
   <div class="input-grid">
     <div class="input-row">
       <label>KOSPI 지수</label>
@@ -319,8 +319,20 @@
       <input type="number" id="in-foreign" step="1" placeholder="예: -3500 (억원)">
     </div>
     <div class="input-row">
-      <label>금 현물 (수동 보정, 선택)</label>
+      <label>금 현물 $ (수동 보정, 선택)</label>
       <input type="number" id="in-gold" step="0.01" placeholder="자동 실패 시만">
+    </div>
+    <div class="input-row">
+      <label>원/달러 환율 (수동 보정, 선택)</label>
+      <input type="number" id="in-usdkrw" step="0.1" placeholder="자동 실패 시만: 1485">
+    </div>
+    <div class="input-row">
+      <label>BTC $ (수동 보정, 선택)</label>
+      <input type="number" id="in-btc" step="1" placeholder="자동 실패 시만: 64200">
+    </div>
+    <div class="input-row">
+      <label>BTC 도미넌스 % (수동 보정, 선택)</label>
+      <input type="number" id="in-btcdom" step="0.1" placeholder="자동 실패 시만: 58">
     </div>
   </div>
   <button class="btn" id="save-btn">저장하고 다시 판단</button>
@@ -328,7 +340,8 @@
 </div>
 
 <div class="footer">
-  자동 데이터: CoinGecko(가격·도미넌스), freegoldapi(금), exchangerate(환율)<br>
+  자동 데이터: CoinGecko(가격·도미넌스), gold-api/freegoldapi(금), exchangerate(환율) · CORS 프록시 경유<br>
+  자동 갱신 실패 시 아래 입력창에서 직접 보정할 수 있습니다.<br>
   본 대시보드는 투자 참고용이며, 최종 판단과 책임은 투자자 본인에게 있습니다.<br>
   <span id="build-date"></span>
 </div>
@@ -338,11 +351,11 @@
 // 초기값 (2026-07-20 기준 조사값) — API 실패 시 폴백으로도 사용
 // ============================================================
 const DEFAULTS = {
-  btc: 63423, btcChg: -1.66,
-  eth: 1874.59, ethChg: -0.5,
-  btcDom: 57.0, ethDom: 9.94,
-  gold: 4665, goldChg: 0.8,
-  usdkrw: 1200, usdkrwChg: 0.4,
+  btc: 64200, btcChg: -0.9,
+  eth: 1844, ethChg: 0.1,
+  btcDom: 58.0, ethDom: 9.9,
+  gold: 4005, goldChg: -0.4,
+  usdkrw: 1485, usdkrwChg: 0.5,
   // 수동 입력 지표 기본값
   kospi: 6643.58, kospiAth: 8800,
   spx: 7519, spxAth: 7620.90,
@@ -365,14 +378,32 @@ function loadState() {
 // ============================================================
 // 데이터 fetch (브라우저에서 직접 호출)
 // ============================================================
+// CORS 프록시 목록 (순차 시도) — GitHub Pages(https)에서 외부 API 호출 시 CORS 우회
+const PROXIES = [
+  (u) => u,  // 1순위: 직접 호출 (CORS 허용 API는 그대로 성공)
+  (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+  (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+];
+
+// 여러 프록시를 순차 시도하는 견고한 fetch
+async function smartFetch(url, asJson = true) {
+  for (const wrap of PROXIES) {
+    try {
+      const r = await fetch(wrap(url), { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) continue;
+      return asJson ? await r.json() : await r.text();
+    } catch(e) { /* 다음 프록시 시도 */ }
+  }
+  throw new Error('all proxies failed');
+}
+
 async function fetchAll() {
   let ok = [];
   let fail = [];
 
   // 1) CoinGecko: BTC/ETH 가격 + 24h 변동 + 7일 실제 곡선(스파크라인)
   try {
-    const r = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&sparkline=true&price_change_percentage=24h');
-    const d = await r.json();
+    const d = await smartFetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&sparkline=true&price_change_percentage=24h');
     if (Array.isArray(d) && d.length) {
       const btc = d.find(c => c.id === 'bitcoin');
       const eth = d.find(c => c.id === 'ethereum');
@@ -387,60 +418,55 @@ async function fetchAll() {
         if (eth.sparkline_in_7d && eth.sparkline_in_7d.price) state.ethSpark = eth.sparkline_in_7d.price;
       }
       ok.push('가격');
-    }
+    } else { fail.push('가격'); }
   } catch(e) { fail.push('가격'); }
 
   // 2) CoinGecko: 글로벌 도미넌스
   try {
-    const r = await fetch('https://api.coingecko.com/api/v3/global');
-    const d = await r.json();
+    const d = await smartFetch('https://api.coingecko.com/api/v3/global');
     if (d.data && d.data.market_cap_percentage) {
       state.btcDom = d.data.market_cap_percentage.btc;
       state.ethDom = d.data.market_cap_percentage.eth;
       ok.push('도미넌스');
-    }
+    } else { fail.push('도미넌스'); }
   } catch(e) { fail.push('도미넌스'); }
 
-  // 3) 금 현물 (gold-api.com 현재가 + freegoldapi 7일 곡선)
+  // 3) 금 현물 (gold-api.com 현재가)
+  let goldOk = false;
   try {
-    const r = await fetch('https://gold-api.com/price/XAU');
-    const d = await r.json();
-    if (d && d.price) {
-      state.gold = d.price;
-      ok.push('금');
-    }
-  } catch(e) { fail.push('금'); }
+    const d = await smartFetch('https://gold-api.com/price/XAU');
+    if (d && d.price) { state.gold = d.price; goldOk = true; }
+  } catch(e) { /* 곡선에서 재시도 */ }
   // 금 7일 곡선 (freegoldapi CSV - 최근 8행)
   try {
-    const r2 = await fetch('https://freegoldapi.com/data/latest.csv');
-    const csv = await r2.text();
+    const csv = await smartFetch('https://freegoldapi.com/data/latest.csv', false);
     const rows = csv.trim().split('\n').slice(-8);
     const prices = rows.map(l => parseFloat(l.split(',')[1])).filter(v => !isNaN(v));
     if (prices.length >= 2) {
       state.goldSpark = prices;
-      // 현재가 자동 실패 시 CSV 마지막 값으로 보완
-      if (!state.gold) state.gold = prices[prices.length - 1];
-      // 전일 대비 변동률 계산
+      if (!goldOk) { state.gold = prices[prices.length - 1]; goldOk = true; }
       const prev = prices[prices.length - 2];
       state.goldChg = ((state.gold - prev) / prev) * 100;
     }
   } catch(e) { /* 곡선 없어도 진행 */ }
+  if (goldOk) ok.push('금'); else fail.push('금');
 
-  // 4) 환율 (exchangerate.host - 무료, 키 불필요)
+  // 4) 환율 (exchangerate-api - 무료, 키 불필요)
   try {
-    const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-    const d = await r.json();
+    const d = await smartFetch('https://api.exchangerate-api.com/v4/latest/USD');
     if (d.rates && d.rates.KRW) {
       state.usdkrw = d.rates.KRW;
       ok.push('환율');
-    }
+    } else { fail.push('환율'); }
   } catch(e) { fail.push('환율'); }
 
   const note = document.getElementById('err-note');
   if (fail.length) {
-    note.textContent = '⚠️ 자동 갱신 실패: ' + fail.join(', ') + ' (초기값/수동값 사용 중)';
+    note.textContent = '⚠️ 자동 갱신 실패: ' + fail.join(', ') + ' — 초기값 또는 수동 입력값 사용 중 (아래에서 직접 보정 가능)';
+    note.style.color = 'var(--wait)';
   } else {
-    note.textContent = '✓ 자동 지표 ' + ok.length + '종 갱신 완료';
+    note.textContent = '✓ 자동 지표 ' + ok.length + '종 실시간 갱신 완료';
+    note.style.color = 'var(--buy)';
     setTimeout(() => { note.textContent = ''; }, 4000);
   }
 
@@ -838,9 +864,12 @@ document.getElementById('save-btn').addEventListener('click', () => {
   const map = {
     'in-kospi': 'kospi', 'in-kospi-ath': 'kospiAth',
     'in-spx': 'spx', 'in-spx-ath': 'spxAth',
-    'in-vix': 'vix', 'in-fng': 'fng', 'in-foreign': 'foreign', 'in-gold': 'gold'
+    'in-vix': 'vix', 'in-fng': 'fng', 'in-foreign': 'foreign',
+    'in-gold': 'gold', 'in-usdkrw': 'usdkrw', 'in-btc': 'btc', 'in-btcdom': 'btcDom'
   };
   for (const [id, key] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
     const v = g(id);
     if (v !== null) state[key] = v;
   }
@@ -848,6 +877,7 @@ document.getElementById('save-btn').addEventListener('click', () => {
   render();
   const note = document.getElementById('err-note');
   note.textContent = '✓ 입력값 저장 완료, 재판단했습니다';
+  note.style.color = 'var(--buy)';
   setTimeout(() => { note.textContent = ''; }, 3000);
 });
 
