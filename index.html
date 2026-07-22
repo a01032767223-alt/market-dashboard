@@ -240,6 +240,8 @@
   </div>
 </header>
 
+<div id="warnBanner" style="display:none"></div>
+
 <!-- 지수 히어로 -->
 <div class="indices" id="indices"></div>
 
@@ -271,7 +273,7 @@
     </div>
     <div class="panel">
       <div class="ptitle">투자자 매매동향</div>
-      <div class="psub">코스피 당일 순매수 (억원 · 빨강 매수 / 파랑 매도)</div>
+      <div class="psub">대표 10종목 합산 순매수 (억원 · 빨강 매수 / 파랑 매도)</div>
       <div class="flow" id="flow"></div>
     </div>
   </div>
@@ -302,12 +304,12 @@
     <span id="dataMode"></span>
   </div>
   <details class="cfg">
-    <summary>⚙️ 실시간 연동 설정 (KIS API / 프록시)</summary>
-    <p>현재 <b>원/달러 환율은 실시간</b>(open.er-api.com)으로 들어오고, 국내 지수·섹터·투자자수급은 <b>데모 데이터</b>로 표시됩니다.
-    상단 <code>CONFIG</code> 객체의 <code>KIS_PROXY_URL</code>에 보유하신 Cloudflare Worker 주소를 넣으면 실시간으로 전환됩니다.
-    Worker는 아래 형태의 JSON을 반환하도록 구성하면 이 화면이 그대로 작동합니다:</p>
-    <p><code>{ kospi:{price,chg,chgPct,athPct}, kosdaq:{...}, investors:{foreign,inst,retail}, sectors:[{name,chg1d,chg5d,chg20d,rsVsKospi,foreignNet,instNet,maDev}], fearGreed:number }</code></p>
-    <p>연동 코드는 <code>fetchKoreanData()</code> 함수 안에 이미 준비돼 있어 URL만 채우면 됩니다.</p>
+    <summary>⚙️ 데이터 연동 구조</summary>
+    <p>이 화면은 같은 폴더의 <code>data.json</code>을 읽습니다. <b>GitHub Actions</b>가 약 5분마다
+    KIS·글로벌 지표를 받아 <code>data.json</code>으로 저장하고(폰·외부용), PC에서는 <code>kis_proxy.py</code>가
+    같은 데이터를 즉석에서 내보냅니다. <code>data.json</code>이 아직 없으면 데모 데이터로 표시됩니다.</p>
+    <p>데이터 형식: <code>{ kospi:{price,chg,chgPct,ath}, kosdaq:{...}, investors:{foreign,inst,retail}, fearGreed, sectors:[{name,chg1d,chg5d,chg20d,rsVsKospi,foreignNet,instNet,maDev}], globals:[...], generatedAt, warnings:[] }</code></p>
+    <p>일부 지표 갱신이 실패하면 상단에 경고가 뜨고, 해당 값은 직전 데이터로 유지됩니다. ATH는 신고가가 나오면 자동으로 갱신됩니다.</p>
   </details>
 </div>
 
@@ -398,24 +400,26 @@ const STAGES=[
 ];
 
 /* ── 글로벌 지표: 환율만 실시간, 나머지는 예시 ── */
-async function fetchGlobals(){
-  let usdkrw={val:null,chg:null,live:false};
+async function fetchGlobals(kr){
+  // data.json 에 서버가 받아둔 글로벌 지표가 있으면 그걸 사용 (실시간)
+  if(kr && Array.isArray(kr.globals) && kr.globals.length) return kr.globals;
+  // 폴백(데모): data.json 없이 파일만 열었을 때. 원/달러만 실시간 시도.
+  let usdkrw=null;
   try{
     const r=await fetch("https://open.er-api.com/v6/latest/USD");
     const j=await r.json();
-    if(j&&j.rates&&j.rates.KRW){ usdkrw={val:j.rates.KRW, chg:null, live:true}; }
+    if(j&&j.rates&&j.rates.KRW) usdkrw=j.rates.KRW;
   }catch(e){}
-  const g=[
+  return [
     {k:"S&P 500",       v:"6,284",  c:+0.42, hint:"미국 대표지수", live:false, spark:up(8)},
     {k:"나스닥",         v:"20,912", c:+0.61, hint:"기술주 중심",   live:false, spark:up(8)},
     {k:"SOX 반도체",    v:"5,740",  c:+1.24, hint:"삼성·SK 선행", live:false, spark:up(8)},
-    {k:"원/달러",       v: usdkrw.live? Math.round(usdkrw.val).toLocaleString(): "1,388", c:-0.18, hint: usdkrw.live?"실시간":"원↓ 외국인 유리", live:usdkrw.live, spark:down(8)},
+    {k:"원/달러",       v: usdkrw? Math.round(usdkrw).toLocaleString(): "1,388", c:-0.18, hint: usdkrw?"실시간":"원↓ 외국인 유리", live:!!usdkrw, spark:down(8)},
     {k:"美10년 금리",   v:"4.28%",  c:+0.9,  hint:"금리↑ 성장주 부담", live:false, spark:up(8)},
     {k:"VIX 공포지수",  v:"14.6",   c:-3.2,  hint:"낮을수록 안정",  live:false, spark:down(8)},
     {k:"WTI 유가",      v:"$71.4",  c:+0.8,  hint:"에너지·조선 영향",live:false, spark:up(8)},
     {k:"외국인 순매수", v:"-1,840억",c:-1,   hint:"코스피 당일",   live:false, spark:down(8), raw:true},
   ];
-  return g;
 }
 function up(n){return Array.from({length:n},()=>60+Math.random()*40).map((v,i,a)=> i? a[i-1]+(Math.random()*6-2):v)}
 function down(n){return Array.from({length:n},()=>60+Math.random()*40).map((v,i,a)=> i? a[i-1]+(Math.random()*4-3):v)}
@@ -608,7 +612,8 @@ function marketStatus(){
    ═══════════════════════════════════════════════════════════ */
 async function refresh(){
   const btn=$("#refreshBtn"); btn.classList.add('spin');
-  const [kr,g]=await Promise.all([fetchKoreanData(), fetchGlobals()]);
+  const kr=await fetchKoreanData();
+  const g=await fetchGlobals(kr);
   renderIndices(kr);
   renderGlobals(g);
   renderGauge(kr.fearGreed);
@@ -629,6 +634,14 @@ async function refresh(){
     $("#dataMode").textContent = kr._live ? " 국내 데이터: 실시간 연동됨." : " 현재 국내 지수·섹터는 데모 데이터입니다(환율만 실시간).";
   }
   $("#lastUpdate").textContent=tsLabel;
+  // 갱신 실패 경고를 조용히 넘기지 않고 표시
+  const wb=$("#warnBanner");
+  if(kr.warnings && kr.warnings.length){
+    wb.style.display="block";
+    wb.innerHTML='<div style="background:var(--down-dim);border:1px solid var(--down);'+
+      'border-radius:10px;padding:9px 13px;margin-bottom:14px;font-size:12px;color:var(--txt2);font-weight:600">'+
+      '⚠️ 일부 지표 갱신 실패 · '+kr.warnings.join(" / ")+' — 나머지는 정상입니다.</div>';
+  }else{ wb.style.display="none"; wb.innerHTML=""; }
   setTimeout(()=>btn.classList.remove('spin'),700);
 }
 $("#refreshBtn").addEventListener('click',refresh);
