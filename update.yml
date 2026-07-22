@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────────────────────
+#  이 파일은 저장소의  .github/workflows/update.yml  위치에 두세요.
+#  평일 한국 장중(09:00~17:00)에 5분마다 KIS 데이터를 받아 저장합니다.
+# ─────────────────────────────────────────────────────────────
+name: KIS 데이터 갱신
+
+on:
+  schedule:
+    # cron은 UTC 기준. KST = UTC+9 이므로 00~07 UTC = 09~16시 KST.
+    - cron: "*/5 0-7 * * 1-5"
+  workflow_dispatch:   # 저장소 Actions 탭에서 '수동 실행' 버튼 제공
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install requests
+
+      - name: KIS 데이터 수집
+        env:
+          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+        run: python fetch_data.py
+
+      - name: data.json 커밋
+        run: |
+          git config user.name  "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add data.json
+          git commit -m "데이터 갱신 $(date -u +%H:%M)" || echo "변경 없음"
+          git push
