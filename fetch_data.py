@@ -4,7 +4,7 @@ GitHub Actions 전용 · KIS 데이터를 받아 data.json 으로 저장.
 앱키는 코드에 넣지 않고 GitHub Secrets(환경변수)에서 읽습니다.
 로컬 테스트:  KIS_APP_KEY=... KIS_APP_SECRET=... python fetch_data.py
 """
-import os, json, time
+import os, json, time, math
 from datetime import datetime, timezone, timedelta
 import requests
 
@@ -14,7 +14,7 @@ IS_MOCK    = os.environ.get("KIS_MOCK", "0") == "1"
 
 # 사상 최고가(ATH) — 신고가 나오면 이 숫자만 수정
 KOSPI_ATH  = 9385.59   # 2026-06-19 장중 사상최고가 (전고점)
-KOSDAQ_ATH = 1214.0
+KOSDAQ_ATH = 1214.0    # 2026년 사이클 고점(4~5월 1200선). 실제 역대최고는 2000년 2800선대
 
 SECTOR_BASKETS = [
     ("반도체",        [("삼성전자","005930"),("SK하이닉스","000660"),("한미반도체","042700")]),
@@ -93,6 +93,73 @@ def investor_net(code, price):
 
 def pct(closes, n):
     return (closes[0] / closes[n] - 1) * 100 if len(closes) > n else 0.0
+
+# ── AI 채점 엔진 (대시보드 JS와 반드시 동일해야 함) ───────────────
+WEIGHTS = {"momentum": 0.35, "relStrength": 0.25, "flow": 0.25, "trend": 0.15}
+HIST_MAX = 13          # 현재 + 과거 12갱신 (6·12갱신 비교용)
+
+def _clamp(v, a, b):
+    return max(a, min(b, v))
+
+def _norm(v, lo, hi):
+    return _clamp((v - lo) / (hi - lo) * 100, 0, 100)
+
+def _jsround(x):
+    """JS Math.round와 동일(.5는 위로). 파이썬 round는 은행가반올림이라 다름."""
+    return math.floor(x + 0.5)
+
+def score_sector(s):
+    fM = _norm(s["chg5d"] * 0.6 + s["chg20d"] * 0.4, -12, 12)
+    fR = _norm(s["rsVsKospi"], -6, 6)
+    fF = _norm(s["foreignNet"] + s["instNet"], -2500, 2500)
+    fT = _norm(s["maDev"], -8, 8)
+    return _jsround(fM * WEIGHTS["momentum"] + fR * WEIGHTS["relStrength"] +
+                    fF * WEIGHTS["flow"] + fT * WEIGHTS["trend"])
+
+def signal_of(score):
+    if score >= 72: return "strongbuy"
+    if score >= 60: return "buy"
+    if score >= 45: return "hold"
+    if score >= 32: return "reduce"
+    return "sell"
+
+def merge_history(sec, prev_sec, ok=True):
+    """이전 갱신과 비교해 점수 히스토리·신호 전환 정보를 붙인다."""
+    pv = prev_sec or {}
+    hist = list(pv.get("scoreHistory") or [])
+
+    if not ok and hist:
+        # 조회 실패분은 가짜 50점으로 히스토리를 오염시키지 않고 직전값 유지
+        sec["score"] = pv.get("score", hist[-1])
+        sec["signal"] = pv.get("signal", signal_of(sec["score"]))
+        sec["signalFrom"] = pv.get("signalFrom")
+        sec["signalChangedAgo"] = pv.get("signalChangedAgo")
+        sec["scoreHistory"] = hist[-HIST_MAX:]
+        sec["stale"] = True
+    else:
+        score = score_sector(sec)
+        sig = signal_of(score)
+        prev_sig = pv.get("signal")
+        if prev_sig is None:                       # 히스토리 없음(최초 실행)
+            sig_from, ago = None, None
+        elif sig != prev_sig:                      # 신호가 방금 바뀜
+            sig_from, ago = prev_sig, 0
+        else:                                      # 유지 → 경과 갱신 +1
+            pa = pv.get("signalChangedAgo")
+            sig_from, ago = pv.get("signalFrom"), (pa + 1 if pa is not None else None)
+        hist.append(score)
+        sec["score"] = score
+        sec["signal"] = sig
+        sec["signalFrom"] = sig_from
+        sec["signalChangedAgo"] = ago
+        sec["scoreHistory"] = hist[-HIST_MAX:]
+        sec["stale"] = False
+
+    h = sec["scoreHistory"]
+    cur = sec["score"]
+    sec["d6"]  = cur - h[-7]  if len(h) >= 7  else None   # 6갱신 전 대비
+    sec["d12"] = cur - h[-13] if len(h) >= 13 else None   # 12갱신 전 대비
+    return sec
 
 def fetch_basket(members):
     """섹터 바스켓 집계: 등락률은 구성종목 평균, 수급은 합산."""
@@ -225,13 +292,16 @@ def main():
     sectors = []
     mkt_frgn = mkt_inst = mkt_prsn = 0   # 바스켓 합산 시장 수급
     sec_fail = 0
+    ok_flags = []
     for name, members in SECTOR_BASKETS:
         b = fetch_basket(members)
-        if b is None:
-            print(f"  ! {name} 전체 실패 → 중립")
+        ok = b is not None
+        if not ok:
+            print(f"  ! {name} 전체 실패 → 직전 점수 유지")
             b = {"chg1d": 0, "chg5d": 0, "chg20d": 0, "maDev": 0,
                  "foreignNet": 0, "instNet": 0, "prsn": 0, "members": []}
             sec_fail += 1
+        ok_flags.append(ok)
         mkt_frgn += b["foreignNet"]; mkt_inst += b["instNet"]; mkt_prsn += b["prsn"]
         sectors.append({"name": name, "chg1d": b["chg1d"], "chg5d": b["chg5d"],
                         "chg20d": b["chg20d"], "maDev": b["maDev"],
@@ -243,6 +313,14 @@ def main():
     avg20 = sum(s["chg20d"] for s in sectors) / len(sectors)
     for s in sectors:
         s["rsVsKospi"] = round(s["chg20d"] - avg20, 2)
+
+    # 점수 산출 + 신호 전환/히스토리 병합 (직전 data.json 기준)
+    prev_map = {p.get("name"): p for p in (prev.get("sectors") or [])}
+    for s, ok in zip(sectors, ok_flags):
+        merge_history(s, prev_map.get(s["name"]), ok)
+    changed = [s["name"] for s in sectors if s.get("signalChangedAgo") == 0]
+    if changed:
+        print("  ◆ 신호 전환:", ", ".join(changed))
 
     payload = {
         "kospi":  {k: kospi[k]  for k in ("price", "chg", "chgPct", "ath")},

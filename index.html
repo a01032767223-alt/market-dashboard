@@ -142,6 +142,25 @@
 
   /* ── Sector heatmap ── */
   .heat{display:grid; grid-template-columns:repeat(5,1fr); gap:9px}
+
+  /* 신호 변화 감시 */
+  .trans{display:grid; grid-template-columns:repeat(2,1fr); gap:11px}
+  .tgrp{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px 13px}
+  .tgrp.enter{border-color:rgba(240,80,60,.45)}
+  .tgrp.exit{border-color:rgba(76,141,255,.45)}
+  .tghead{display:flex; align-items:center; gap:7px; margin-bottom:9px}
+  .tgtitle{font-size:12.5px; font-weight:900; letter-spacing:-.2px}
+  .tgcount{font-size:10.5px; font-weight:800; color:var(--txt3); margin-left:auto}
+  .trow{display:flex; align-items:center; gap:9px; padding:7px 0; border-top:1px solid var(--line)}
+  .trow:first-of-type{border-top:0}
+  .tnm{font-size:12.5px; font-weight:800; min-width:74px}
+  .tmid{flex:1; min-width:0}
+  .tsig{font-size:10.5px; font-weight:800; color:var(--txt2); white-space:nowrap}
+  .tago{font-size:9.5px; font-weight:800; color:var(--txt3); margin-left:5px}
+  .tdelta{font-size:12px; font-weight:900; white-space:nowrap}
+  .tscore{font-size:13px; font-weight:900; white-space:nowrap}
+  .tempty{font-size:11.5px; color:var(--txt3); font-weight:700; padding:9px 0}
+  .thint{font-size:10.5px; color:var(--txt3); font-weight:700; margin-top:9px; line-height:1.5}
   .sector{
     border:1px solid var(--line); border-radius:13px; padding:12px 12px 11px;
     cursor:pointer; transition:.16s; position:relative; overflow:hidden;
@@ -210,6 +229,7 @@
   @media(max-width:880px){
     .globals{grid-template-columns:repeat(2,1fr)}
     .heat{grid-template-columns:repeat(2,1fr)}
+    .trans{grid-template-columns:1fr}
     .two{grid-template-columns:1fr}
     .indices{grid-template-columns:1fr}
     .factors{grid-template-columns:repeat(2,1fr)}
@@ -285,21 +305,27 @@
   </div>
 </section>
 
+<!-- 신호 변화 감시 -->
+<section>
+  <div class="sec-head"><span class="dot"></span><span class="eyebrow">02 · SIGNAL SHIFT</span><h2>신호 변화 감시</h2></div>
+  <div class="trans" id="transitions"></div>
+</section>
+
 <!-- 섹터 히트맵 -->
 <section>
-  <div class="sec-head"><span class="dot"></span><span class="eyebrow">02 · SECTOR HEATMAP</span><h2>10대 핵심 섹터 히트맵</h2></div>
+  <div class="sec-head"><span class="dot"></span><span class="eyebrow">03 · SECTOR HEATMAP</span><h2>10대 핵심 섹터 히트맵</h2></div>
   <div class="heat" id="heat"></div>
 </section>
 
 <!-- AI 섹터 추천 -->
 <section>
-  <div class="sec-head"><span class="dot"></span><span class="eyebrow">03 · AI SCORING</span><h2>AI 섹터 추천 순위 <span style="font-size:11px;color:var(--txt3);font-weight:700">· 클릭하면 점수 근거</span></h2></div>
+  <div class="sec-head"><span class="dot"></span><span class="eyebrow">04 · AI SCORING</span><h2>AI 섹터 추천 순위 <span style="font-size:11px;color:var(--txt3);font-weight:700">· 클릭하면 점수 근거</span></h2></div>
   <div class="rank" id="rank"></div>
 </section>
 
 <!-- 경제 일정 -->
 <section>
-  <div class="sec-head"><span class="dot"></span><span class="eyebrow">04 · CALENDAR</span><h2>주요 경제 일정</h2></div>
+  <div class="sec-head"><span class="dot"></span><span class="eyebrow">05 · CALENDAR</span><h2>주요 경제 일정</h2></div>
   <div class="cal" id="cal"></div>
 </section>
 
@@ -462,7 +488,32 @@ async function fetchKoreanData(){
       return {...j, _live:true};
     }catch(e){ console.warn("KIS 연동 실패, 데모로 대체", e); }
   }
-  return {...structuredClone(DEMO), _live:false};
+  return seedDemoHistory({...structuredClone(DEMO), _live:false});
+}
+
+/* 데모 전용: 신호 변화 화면을 미리 볼 수 있도록 점수 히스토리를 생성.
+   실데이터에는 절대 적용하지 않는다(서버가 쌓은 히스토리만 신뢰). */
+function seedDemoHistory(d){
+  const drift=[-30,14,-4,22,6,-18,3,26,-8,10];   // 12갱신 전→현재 변화폭
+  d.sectors.forEach((s,i)=>{
+    const cur=scoreSector(s).score, dv=drift[i%drift.length];
+    const hist=[];
+    for(let k=12;k>=0;k--){
+      hist.push(Math.max(0,Math.min(100, Math.round(cur-dv*k/12+Math.sin(k*1.6+i)*1.8))));
+    }
+    hist[hist.length-1]=cur;
+    Object.assign(s,{scoreHistory:hist, score:cur,
+      d6:cur-hist[hist.length-7], d12:cur-hist[0]}, deriveFromHistory(hist));
+  });
+  return d;
+}
+/* 히스토리에서 신호 전환 정보를 도출(데모용 · 서버 로직과 동일한 의미) */
+function deriveFromHistory(hist){
+  const sigs=hist.map(v=>signalOf(v).key), now=sigs[sigs.length-1];
+  for(let k=sigs.length-2;k>=0;k--){
+    if(sigs[k]!==now) return {signal:now, signalFrom:sigs[k], signalChangedAgo:sigs.length-2-k};
+  }
+  return {signal:now, signalFrom:null, signalChangedAgo:null};
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -590,6 +641,79 @@ function renderHeat(sectors){
   }).join("");
 }
 
+/* ── 신호 변화 감시 ────────────────────────────────────────── */
+const SIGLVL={sell:0,reduce:1,hold:2,buy:3,strongbuy:4};
+const SIGTXT={sell:"매도",reduce:"비중축소",hold:"중립",buy:"매수",strongbuy:"강력매수"};
+const RECENT_N=5;    // 최근 N갱신 이내 신호 전환을 '변화'로 본다
+const DELTA_TH=10;   // 6갱신 점수 급등/급락 임계
+
+function classifyShift(s){
+  const now=SIGLVL[s.sig.key];
+  const from=(s.signalFrom!=null)?SIGLVL[s.signalFrom]:null;
+  const ago=s.signalChangedAgo;
+  const recent=(from!=null && ago!=null && ago<=RECENT_N);
+  const d6=(s.d6==null?null:s.d6);
+  if(recent && now>from) return {grp:"enter", why:`${SIGTXT[s.signalFrom]}→${SIGTXT[s.sig.key]}`, ago, fresh:ago===0};
+  if(recent && now<from) return {grp:"exit",  why:`${SIGTXT[s.signalFrom]}→${SIGTXT[s.sig.key]}`, ago, fresh:ago===0};
+  if(d6!=null && d6>=DELTA_TH && now>=2) return {grp:"enter", why:"점수 급등 (신호 유지)", ago:null, fresh:false};
+  if(d6!=null && d6<=-DELTA_TH)          return {grp:"exit",  why:"점수 급락 (신호 유지)", ago:null, fresh:false};
+  return {grp:"steady"};
+}
+
+function deltaTag(v){
+  if(v==null) return `<span class="tdelta" style="color:var(--txt3)">–</span>`;
+  const c=v>0?'var(--up)':v<0?'var(--down)':'var(--txt3)';
+  return `<span class="tdelta mono" style="color:${c}">${v>0?'+':''}${v}</span>`;
+}
+
+function transRow(s,info){
+  const col=info.grp==='enter'?'var(--up)':'var(--down)';
+  const spark=(s.scoreHistory&&s.scoreHistory.length>2)?sparkSvg(s.scoreHistory.slice(-12),col):'';
+  const ago=(info.ago==null)?'':`<span class="tago">${info.ago===0?'방금':info.ago+'갱신 전'}</span>`;
+  return `<div class="trow">
+    <div class="tnm">${s.name}${info.fresh?' <span style="color:var(--gold)">●</span>':''}</div>
+    <div class="tmid"><div class="tsig">${info.why}${ago}</div></div>
+    ${spark}
+    <div class="tscore mono" style="color:${col}">${s.score}</div>
+    ${deltaTag(s.d6)}
+  </div>`;
+}
+
+function renderTransitions(){
+  const box=$("#transitions"); if(!box) return;
+  const hasHist=SCORED.some(s=>s.scoreHistory&&s.scoreHistory.length>1);
+  if(!hasHist){
+    box.innerHTML=`<div class="tgrp" style="grid-column:1/-1"><div class="tempty">
+      신호 히스토리를 모으는 중입니다. 갱신이 6회 이상 쌓이면(장중 약 30분) 진입·이탈 신호가 여기에 표시됩니다.
+    </div></div>`;
+    return;
+  }
+  const enter=[], exit=[];
+  SCORED.forEach(s=>{
+    const info=classifyShift(s);
+    if(info.grp==='enter') enter.push([s,info]);
+    else if(info.grp==='exit') exit.push([s,info]);
+  });
+  // 방금 전환된 것 우선, 그다음 점수변화 큰 순
+  const ord=(a,b)=>(b[1].fresh-a[1].fresh)||(Math.abs(b[0].d6||0)-Math.abs(a[0].d6||0));
+  enter.sort(ord); exit.sort(ord);
+
+  const grp=(cls,icon,title,list,empty)=>`<div class="tgrp ${cls}">
+      <div class="tghead"><span>${icon}</span><span class="tgtitle">${title}</span>
+        <span class="tgcount">${list.length}개</span></div>
+      ${list.length?list.map(([s,i])=>transRow(s,i)).join(''):`<div class="tempty">${empty}</div>`}
+    </div>`;
+
+  box.innerHTML =
+    grp('enter','🔴','진입 신호 포착', enter, '현재 신호가 올라온 섹터가 없습니다.') +
+    grp('exit','🔵','이탈·약화 주의',  exit,  '약화 중인 섹터가 없습니다.') +
+    `<div class="thint" style="grid-column:1/-1">
+       ● 표시는 <b>이번 갱신에서 방금 전환</b>된 섹터입니다. 오른쪽 숫자는 현재 점수,
+       그 옆은 <b>6갱신 전 대비 변화</b>이며 스파크라인은 최근 12갱신 추이입니다.
+       신호 전환 또는 6갱신 ${DELTA_TH}점 이상 변화가 있을 때만 표시됩니다.
+     </div>`;
+}
+
 function factorBar(label,val){
   const col = val>=60?'var(--up)': val<=40?'var(--down)':'var(--gold)';
   return `<div class="factor"><div class="fnm">${label}<span>${val}</span></div>
@@ -600,15 +724,24 @@ function renderRank(){
   $("#rank").innerHTML=sorted.map((s,i)=>{
     const topcls=s.sig.top==='buy'?'buy':s.sig.top==='sell'?'sell':'';
     const f=s.factors;
+    const shift=classifyShift(s);
+    const scol=shift.grp==='enter'?'var(--up)':shift.grp==='exit'?'var(--down)':'var(--flat)';
+    const spark=(s.scoreHistory&&s.scoreHistory.length>2)?sparkSvg(s.scoreHistory.slice(-12),scol):'';
+    const transTag=(shift.grp!=='steady')
+      ? `<span style="font-size:10px;font-weight:800;color:${scol};margin-left:6px">
+           ${shift.grp==='enter'?'▲':'▼'} ${shift.why}${shift.ago===0?' · 방금':shift.ago!=null?' · '+shift.ago+'갱신 전':''}</span>`
+      : '';
     return `<div class="rrow ${topcls}" data-name="${s.name}">
       <div class="rk mono">${i+1}</div>
       <div class="rmid">
-        <div class="rnm">${s.name}</div>
+        <div class="rnm">${s.name}${transTag}</div>
         <div class="rwhy">${whyText(s,{factors:f})}</div>
       </div>
       <div class="rright">
+        ${spark}
         <span class="badge ${s.sig.cls}">${s.sig.txt}</span>
         <span class="rscore mono">${s.score}</span>
+        ${deltaTag(s.d6)}
       </div>
       <div class="detail">
         <div class="factors">
@@ -619,6 +752,7 @@ function renderRank(){
         </div>
         <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-top:9px">
           바스켓 구성: ${membersOf(s).join(' · ')||'—'} <span style="color:var(--txt3)">(등락률 평균 · 수급 합산)</span>
+          &nbsp;·&nbsp; 점수 변화 6갱신 ${s.d6==null?'–':(s.d6>0?'+':'')+s.d6} · 12갱신 ${s.d12==null?'–':(s.d12>0?'+':'')+s.d12}
         </div>
       </div>
     </div>`;
@@ -664,6 +798,7 @@ async function refresh(){
   renderGauge(kr.fearGreed);
   renderFlow(kr.investors);
   renderHeat(kr.sectors);
+  renderTransitions();
   renderRank();
   renderCal();
   marketStatus();
