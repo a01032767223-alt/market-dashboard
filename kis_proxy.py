@@ -22,16 +22,22 @@ APP_SECRET = "여기에_본인_APPSECRET_입력"
 IS_MOCK    = False        # 모의투자 계정이면 True
 
 # 코스피/코스닥 사상 최고가(ATH). 신고가가 나오면 이 숫자만 고치세요.
-KOSPI_ATH  = 9312.0
+KOSPI_ATH  = 9385.59   # 2026-06-19 장중 사상최고가 (전고점)
 KOSDAQ_ATH = 1214.0
 # ═══════════════════════════════════════════════════════════
 
 # 섹터 → 대표 종목코드 (바꾸고 싶으면 코드만 교체)
-SECTORS = [
-    ("반도체","005930"), ("금융","105560"), ("자동차","005380"),
-    ("2차전지","373220"), ("방산","012450"), ("조선","329180"),
-    ("바이오","207940"), ("AI·소프트웨어","035420"), ("전력·원전","034020"),
-    ("엔터테인먼트","352820"),
+SECTOR_BASKETS = [
+    ("반도체",        [("삼성전자","005930"),("SK하이닉스","000660"),("한미반도체","042700")]),
+    ("금융",          [("KB금융","105560"),("신한지주","055550"),("하나금융지주","086790")]),
+    ("자동차",        [("현대차","005380"),("기아","000270"),("현대모비스","012330")]),
+    ("2차전지",       [("LG에너지솔루션","373220"),("삼성SDI","006400"),("LG화학","051910")]),
+    ("방산",          [("한화에어로스페이스","012450"),("한국항공우주","047810"),("LIG넥스원","079550")]),
+    ("조선",          [("HD현대중공업","329180"),("삼성중공업","010140"),("한화오션","042660")]),
+    ("바이오",        [("삼성바이오로직스","207940"),("셀트리온","068270"),("유한양행","000100")]),
+    ("AI·소프트웨어", [("NAVER","035420"),("카카오","035720"),("삼성SDS","018260")]),
+    ("전력·원전",     [("두산에너빌리티","034020"),("한국전력","015760"),("LS ELECTRIC","010120")]),
+    ("엔터테인먼트",  [("하이브","352820"),("JYP Ent.","035900"),("에스엠","041510")]),
 ]
 
 BASE = ("https://openapivts.koreainvestment.com:29443" if IS_MOCK
@@ -94,6 +100,27 @@ def fetch_daily(code):
 
 def pct_return(closes, n):
     return (closes[0] / closes[n] - 1) * 100 if len(closes) > n else 0.0
+
+def fetch_basket(members):
+    """섹터 바스켓: 등락률 평균 · 수급 합산."""
+    c1=[]; c5=[]; c20=[]; md=[]; frgn=inst=prsn=0; ok=[]
+    for disp, code in members:
+        try:
+            p = fetch_price(code); time.sleep(0.04)
+            price = float(p.get("stck_prpr", 0)) or 1
+            c1.append(float(p.get("prdy_ctrt", 0)))
+            closes = fetch_daily(code); time.sleep(0.04)
+            c5.append(pct_return(closes, 5)); c20.append(pct_return(closes, 20))
+            ma20 = sum(closes[:20]) / min(20, len(closes))
+            md.append((closes[0] / ma20 - 1) * 100)
+            f, i, pr = investor_net(code, price); time.sleep(0.04)
+            frgn += f; inst += i; prsn += pr; ok.append(disp)
+        except Exception as e:
+            print(f"   · 구성종목 {disp}({code}) 제외: {e}")
+    if not ok: return None
+    a = lambda L: round(sum(L)/len(L), 2)
+    return {"chg1d":a(c1),"chg5d":a(c5),"chg20d":a(c20),"maDev":a(md),
+            "foreignNet":frgn,"instNet":inst,"prsn":prsn,"members":ok}
 
 def investor_net(code, price):
     """종목별 외국인·기관·개인 순매수(억원)."""
@@ -183,27 +210,17 @@ def build_payload():
 
     sectors = []
     mkt_frgn = mkt_inst = mkt_prsn = 0
-    for name, code in SECTORS:
-        try:
-            p = fetch_price(code)
-            price = float(p.get("stck_prpr", 0)) or 1
-            chg1d = float(p.get("prdy_ctrt", 0))
-            time.sleep(0.05)
-            closes = fetch_daily(code)
-            time.sleep(0.05)
-            chg5d  = round(pct_return(closes, 5), 2)
-            chg20d = round(pct_return(closes, 20), 2)
-            ma20 = sum(closes[:20]) / min(20, len(closes)) if closes else closes[0]
-            maDev = round((closes[0] / ma20 - 1) * 100, 2) if closes else 0
-            frgn, inst, prsn = investor_net(code, price); time.sleep(0.05)
-            mkt_frgn += frgn; mkt_inst += inst; mkt_prsn += prsn
-        except Exception as e:
-            print(f"  ! {name}({code}) 조회 실패 → 중립 처리: {e}")
-            chg1d = chg5d = chg20d = maDev = 0.0
-            frgn = inst = 0
-        sectors.append({"name": name, "chg1d": chg1d, "chg5d": chg5d,
-                        "chg20d": chg20d, "maDev": maDev,
-                        "foreignNet": frgn, "instNet": inst})
+    for name, members in SECTOR_BASKETS:
+        b = fetch_basket(members)
+        if b is None:
+            print(f"  ! {name} 전체 실패 → 중립")
+            b = {"chg1d":0,"chg5d":0,"chg20d":0,"maDev":0,
+                 "foreignNet":0,"instNet":0,"prsn":0,"members":[]}
+        mkt_frgn += b["foreignNet"]; mkt_inst += b["instNet"]; mkt_prsn += b["prsn"]
+        sectors.append({"name": name, "chg1d": b["chg1d"], "chg5d": b["chg5d"],
+                        "chg20d": b["chg20d"], "maDev": b["maDev"],
+                        "foreignNet": b["foreignNet"], "instNet": b["instNet"],
+                        "members": b["members"]})
 
     # 상대강도(RS) = 각 섹터 20일수익률 − 섹터 평균 20일수익률
     avg20 = sum(s["chg20d"] for s in sectors) / len(sectors)

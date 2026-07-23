@@ -13,14 +13,20 @@ APP_SECRET = os.environ["KIS_APP_SECRET"]
 IS_MOCK    = os.environ.get("KIS_MOCK", "0") == "1"
 
 # 사상 최고가(ATH) — 신고가 나오면 이 숫자만 수정
-KOSPI_ATH  = 9312.0
+KOSPI_ATH  = 9385.59   # 2026-06-19 장중 사상최고가 (전고점)
 KOSDAQ_ATH = 1214.0
 
-SECTORS = [
-    ("반도체","005930"), ("금융","105560"), ("자동차","005380"),
-    ("2차전지","373220"), ("방산","012450"), ("조선","329180"),
-    ("바이오","207940"), ("AI·소프트웨어","035420"), ("전력·원전","034020"),
-    ("엔터테인먼트","352820"),
+SECTOR_BASKETS = [
+    ("반도체",        [("삼성전자","005930"),("SK하이닉스","000660"),("한미반도체","042700")]),
+    ("금융",          [("KB금융","105560"),("신한지주","055550"),("하나금융지주","086790")]),
+    ("자동차",        [("현대차","005380"),("기아","000270"),("현대모비스","012330")]),
+    ("2차전지",       [("LG에너지솔루션","373220"),("삼성SDI","006400"),("LG화학","051910")]),
+    ("방산",          [("한화에어로스페이스","012450"),("한국항공우주","047810"),("LIG넥스원","079550")]),
+    ("조선",          [("HD현대중공업","329180"),("삼성중공업","010140"),("한화오션","042660")]),
+    ("바이오",        [("삼성바이오로직스","207940"),("셀트리온","068270"),("유한양행","000100")]),
+    ("AI·소프트웨어", [("NAVER","035420"),("카카오","035720"),("삼성SDS","018260")]),
+    ("전력·원전",     [("두산에너빌리티","034020"),("한국전력","015760"),("LS ELECTRIC","010120")]),
+    ("엔터테인먼트",  [("하이브","352820"),("JYP Ent.","035900"),("에스엠","041510")]),
 ]
 BASE = ("https://openapivts.koreainvestment.com:29443" if IS_MOCK
         else "https://openapi.koreainvestment.com:9443")
@@ -87,6 +93,29 @@ def investor_net(code, price):
 
 def pct(closes, n):
     return (closes[0] / closes[n] - 1) * 100 if len(closes) > n else 0.0
+
+def fetch_basket(members):
+    """섹터 바스켓 집계: 등락률은 구성종목 평균, 수급은 합산."""
+    c1 = []; c5 = []; c20 = []; md = []
+    frgn = inst = prsn = 0; ok = []
+    for disp, code in members:
+        try:
+            p = fetch_price(code); time.sleep(0.04)
+            price = float(p.get("stck_prpr", 0)) or 1
+            c1.append(float(p.get("prdy_ctrt", 0)))
+            closes = fetch_daily(code); time.sleep(0.04)
+            c5.append(pct(closes, 5)); c20.append(pct(closes, 20))
+            ma20 = sum(closes[:20]) / min(20, len(closes))
+            md.append((closes[0] / ma20 - 1) * 100)
+            f, i, pr = investor_net(code, price); time.sleep(0.04)
+            frgn += f; inst += i; prsn += pr; ok.append(disp)
+        except Exception as e:
+            print(f"   · 구성종목 {disp}({code}) 제외: {e}")
+    if not ok:
+        return None
+    a = lambda L: round(sum(L) / len(L), 2)
+    return {"chg1d": a(c1), "chg5d": a(c5), "chg20d": a(c20), "maDev": a(md),
+            "foreignNet": frgn, "instNet": inst, "prsn": prsn, "members": ok}
 
 # ── 글로벌 선행지표 (서버 환경이라 CORS 없음. Yahoo 무료 엔드포인트) ──
 UA = {"User-Agent": "Mozilla/5.0"}
@@ -194,27 +223,20 @@ def main():
             warnings.append("공포·탐욕 갱신 실패(직전값)")
 
     sectors = []
-    mkt_frgn = mkt_inst = mkt_prsn = 0   # 대표종목 합산 시장 수급
+    mkt_frgn = mkt_inst = mkt_prsn = 0   # 바스켓 합산 시장 수급
     sec_fail = 0
-    for name, code in SECTORS:
-        try:
-            p = fetch_price(code); time.sleep(0.05)
-            price = float(p.get("stck_prpr", 0)) or 1
-            chg1d = float(p.get("prdy_ctrt", 0))
-            closes = fetch_daily(code); time.sleep(0.05)
-            chg5d, chg20d = round(pct(closes, 5), 2), round(pct(closes, 20), 2)
-            ma20 = sum(closes[:20]) / min(20, len(closes))
-            maDev = round((closes[0] / ma20 - 1) * 100, 2)
-            frgn, inst, prsn = investor_net(code, price); time.sleep(0.05)
-            mkt_frgn += frgn; mkt_inst += inst; mkt_prsn += prsn
-        except Exception as e:
-            print(f"  ! {name}({code}) 실패 → 중립: {e}")
-            chg1d = chg5d = chg20d = maDev = 0.0
-            frgn = inst = 0
+    for name, members in SECTOR_BASKETS:
+        b = fetch_basket(members)
+        if b is None:
+            print(f"  ! {name} 전체 실패 → 중립")
+            b = {"chg1d": 0, "chg5d": 0, "chg20d": 0, "maDev": 0,
+                 "foreignNet": 0, "instNet": 0, "prsn": 0, "members": []}
             sec_fail += 1
-        sectors.append({"name": name, "chg1d": chg1d, "chg5d": chg5d,
-                        "chg20d": chg20d, "maDev": maDev,
-                        "foreignNet": frgn, "instNet": inst})
+        mkt_frgn += b["foreignNet"]; mkt_inst += b["instNet"]; mkt_prsn += b["prsn"]
+        sectors.append({"name": name, "chg1d": b["chg1d"], "chg5d": b["chg5d"],
+                        "chg20d": b["chg20d"], "maDev": b["maDev"],
+                        "foreignNet": b["foreignNet"], "instNet": b["instNet"],
+                        "members": b["members"]})
     if sec_fail:
         warnings.append(f"섹터 {sec_fail}개 갱신 실패(중립 처리)")
 

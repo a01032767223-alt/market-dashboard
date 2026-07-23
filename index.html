@@ -249,6 +249,7 @@
 <div class="stage-strip">
   <span class="lbl">5단계 매수전략 (KOSPI ATH 낙폭 기준)</span>
   <div class="stages" id="stages"></div>
+  <span id="stageGuide" style="font-size:11.5px;font-weight:800;white-space:nowrap"></span>
 </div>
 
 <!-- 글로벌 선행지표 -->
@@ -273,7 +274,7 @@
     </div>
     <div class="panel">
       <div class="ptitle">투자자 매매동향</div>
-      <div class="psub">대표 10종목 합산 순매수 (억원 · 빨강 매수 / 파랑 매도)</div>
+      <div class="psub">섹터 바스켓 합산 순매수 (억원 · 빨강 매수 / 파랑 매도)</div>
       <div class="flow" id="flow"></div>
     </div>
   </div>
@@ -300,7 +301,7 @@
 <div class="foot">
   <div class="disc">
     <b>투자 유의 안내.</b> 이 대시보드는 지표를 한눈에 보고 판단을 돕기 위한 <b>참고 도구</b>이며, 특정 종목·섹터의 매수·매도를 권유하거나 수익을 보장하지 않습니다.
-    'AI 점수'는 모멘텀·상대강도·수급·추세 4개 지표를 정해진 가중치로 계산한 <b>규칙 기반 점수</b>일 뿐, 미래 수익률을 예측하지 않습니다. 모든 투자 판단과 책임은 투자자 본인에게 있습니다.
+    'AI 점수'는 모멘텀·상대강도·수급·추세 4개 지표를 정해진 가중치로 계산한 <b>규칙 기반 점수</b>일 뿐, 미래 수익률을 예측하지 않습니다. 각 섹터는 핵심 3종목 바스켓(등락률 평균·수급 합산)으로 산출됩니다. 모든 투자 판단과 책임은 투자자 본인에게 있습니다.
     <span id="dataMode"></span>
   </div>
   <details class="cfg">
@@ -371,8 +372,8 @@ function whyText(s, sc){
    데이터 — 데모(현실적 예시). 연동 시 fetchKoreanData()가 대체
    ═══════════════════════════════════════════════════════════ */
 const DEMO = {
-  kospi:  {price:8942.30, chg:-58.4, chgPct:-0.65, ath:9312.0},
-  kosdaq: {price:1128.7,  chg:4.2,   chgPct:0.37,  ath:1214.0},
+  kospi:  {price:7246.79, chg:-58.4, chgPct:-0.80, ath:9385.59},
+  kosdaq: {price:880.5,   chg:4.2,   chgPct:0.48,  ath:1214.0},
   investors:{foreign:-1840, inst:+2310, retail:-470}, // 억원
   fearGreed:54,
   // 10대 섹터 (이미지 순서). 수치는 예시입니다.
@@ -399,7 +400,20 @@ const STAGES=[
   {n:5,label:"5단계 -45% · 마지막 100만",drop:-45},
 ];
 
-/* ── 글로벌 지표: 환율만 실시간, 나머지는 예시 ── */
+// 섹터 바스켓 구성종목 (data.json의 members가 있으면 그걸 우선 사용)
+const SECTOR_MEMBERS={
+  "반도체":["삼성전자","SK하이닉스","한미반도체"],
+  "금융":["KB금융","신한지주","하나금융지주"],
+  "자동차":["현대차","기아","현대모비스"],
+  "2차전지":["LG에너지솔루션","삼성SDI","LG화학"],
+  "방산":["한화에어로스페이스","한국항공우주","LIG넥스원"],
+  "조선":["HD현대중공업","삼성중공업","한화오션"],
+  "바이오":["삼성바이오로직스","셀트리온","유한양행"],
+  "AI·소프트웨어":["NAVER","카카오","삼성SDS"],
+  "전력·원전":["두산에너빌리티","한국전력","LS ELECTRIC"],
+  "엔터테인먼트":["하이브","JYP Ent.","에스엠"],
+};
+const membersOf=s=>(s.members&&s.members.length?s.members:(SECTOR_MEMBERS[s.name]||[]));
 async function fetchGlobals(kr){
   // data.json 에 서버가 받아둔 글로벌 지표가 있으면 그걸 사용 (실시간)
   if(kr && Array.isArray(kr.globals) && kr.globals.length) return kr.globals;
@@ -458,13 +472,20 @@ function renderIndices(d){
   };
   box.innerHTML=mk("KOSPI",d.kospi)+mk("KOSDAQ",d.kosdaq);
 
-  // 단계 스트립
+  // 단계 스트립: 전고점 대비 낙폭으로 현재 매수 단계 판정
   const drop=(d.kospi.price-d.kospi.ath)/d.kospi.ath*100;
+  const cur=STAGES.filter(x=>drop<=x.drop).slice(-1)[0] || STAGES[0]; // 도달한 가장 깊은 단계
   $("#stages").innerHTML=STAGES.map(s=>{
-    const reached = drop<=s.drop;         // 해당 낙폭 도달
-    const isNow = STAGES.filter(x=>drop<=x.drop).slice(-1)[0]?.n===s.n || (s.n===1 && drop>-15);
-    return `<span class="stg ${reached&&s.n>1?'on':''} ${isNow?'now':''}">${s.label}</span>`;
+    const reached = drop<=s.drop;          // 이 단계 트리거 도달(1단계는 항상 도달)
+    const isNow = s.n===cur.n;             // 현재 단계
+    return `<span class="stg ${reached?'on':''} ${isNow?'now':''}">${s.label}</span>`;
   }).join("");
+  // 현재 단계 안내
+  const guide=$("#stageGuide");
+  if(guide){
+    guide.textContent = `전고점 대비 ${drop.toFixed(1)}% · 현재 ${cur.n}단계`;
+    guide.style.color = cur.n>=3?'var(--up)':cur.n===2?'var(--gold)':'var(--txt3)';
+  }
 }
 
 function sparkSvg(arr,color){
@@ -538,9 +559,10 @@ function renderHeat(sectors){
   SCORED=sectors.map(s=>{const sc=scoreSector(s); return {...s, ...sc, sig:signalOf(sc.score)};});
   $("#heat").innerHTML=SCORED.map((s,i)=>{
     const barcol=s.sig.top==='buy'?'var(--up)':s.sig.top==='sell'?'var(--down)':'var(--flat)';
+    const mcount=membersOf(s).length;
     return `<div class="sector" tabindex="0" style="background:${heatColor(s.score)}" data-i="${i}">
       <div class="stopbar" style="background:${barcol}"></div>
-      <div class="snm">${s.name}</div>
+      <div class="snm">${s.name}${mcount?`<span style="font-size:9px;color:var(--txt3);font-weight:700;margin-left:5px">${mcount}종목</span>`:''}</div>
       <div class="ssig badge ${s.sig.cls}">${s.sig.txt}</div>
       <div class="sscore mono">${s.score}<small>/100</small></div>
       <div class="schg mono ${cc(s.chg1d)}">${sign(s.chg1d)} ${Math.abs(s.chg1d)}% (1D)</div>
@@ -574,6 +596,9 @@ function renderRank(){
           ${factorBar('상대강도 25%',f.relStrength)}
           ${factorBar('수급 25%',f.flow)}
           ${factorBar('추세 15%',f.trend)}
+        </div>
+        <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-top:9px">
+          바스켓 구성: ${membersOf(s).join(' · ')||'—'} <span style="color:var(--txt3)">(등락률 평균 · 수급 합산)</span>
         </div>
       </div>
     </div>`;
