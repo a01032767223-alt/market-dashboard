@@ -245,11 +245,16 @@
 <!-- 지수 히어로 -->
 <div class="indices" id="indices"></div>
 
-<!-- 5단계 매수전략 -->
+<!-- 5단계 매수전략 (지수별) -->
 <div class="stage-strip">
-  <span class="lbl">5단계 매수전략 (KOSPI ATH 낙폭 기준)</span>
+  <span class="lbl">KOSPI 5단계 <span style="color:var(--txt3);font-weight:600">−15/−25/−35/−45</span></span>
   <div class="stages" id="stages"></div>
   <span id="stageGuide" style="font-size:11.5px;font-weight:800;white-space:nowrap"></span>
+</div>
+<div class="stage-strip" style="margin-top:-8px">
+  <span class="lbl">KOSDAQ 5단계 <span style="color:var(--txt3);font-weight:600">−20/−30/−40/−50 · 위성</span></span>
+  <div class="stages" id="stagesKq"></div>
+  <span id="stageGuideKq" style="font-size:11.5px;font-weight:800;white-space:nowrap"></span>
 </div>
 
 <!-- 글로벌 선행지표 -->
@@ -400,6 +405,16 @@ const STAGES=[
   {n:5,label:"5단계 -45% · 마지막 100만",drop:-45},
 ];
 
+// 코스닥: 변동성이 커 트리거를 더 깊게. 규모는 코스피의 절반(위성 포지션).
+// 금액은 예시이며 본인 자금 계획에 맞게 조정하세요.
+const STAGES_KQ=[
+  {n:1,label:"1단계 관망 · 진입 대기",drop:0},
+  {n:2,label:"2단계 -20% · 코스닥150 50만",drop:-20},
+  {n:3,label:"3단계 -30% · 핵심 200만",drop:-30},
+  {n:4,label:"4단계 -40% · 추가 150만",drop:-40},
+  {n:5,label:"5단계 -50% · 마지막 100만",drop:-50},
+];
+
 // 섹터 바스켓 구성종목 (data.json의 members가 있으면 그걸 우선 사용)
 const SECTOR_MEMBERS={
   "반도체":["삼성전자","SK하이닉스","한미반도체"],
@@ -467,23 +482,28 @@ function renderIndices(d){
       <div class="val mono ${cc(o.chg)}">${fmt(o.price)}</div>
       <div class="row2">
         <span class="chg mono ${cc(o.chg)}">${sign(o.chg)} ${fmt(Math.abs(o.chg))} (${o.chgPct>0?'+':''}${o.chgPct}%)</span>
-        <span class="ath">ATH 대비 <b class="${cc(athDrop)}">${athDrop.toFixed(1)}%</b></span>
+        <span class="ath">고점 대비 <b class="${cc(athDrop)}">${athDrop.toFixed(1)}%</b></span>
       </div></div>`;
   };
   box.innerHTML=mk("KOSPI",d.kospi)+mk("KOSDAQ",d.kosdaq);
 
-  // 단계 스트립: 전고점 대비 낙폭으로 현재 매수 단계 판정
-  const drop=(d.kospi.price-d.kospi.ath)/d.kospi.ath*100;
-  const cur=STAGES.filter(x=>drop<=x.drop).slice(-1)[0] || STAGES[0]; // 도달한 가장 깊은 단계
-  $("#stages").innerHTML=STAGES.map(s=>{
-    const reached = drop<=s.drop;          // 이 단계 트리거 도달(1단계는 항상 도달)
-    const isNow = s.n===cur.n;             // 현재 단계
+  // 지수별 5단계 판정 (고점 대비 낙폭 → 도달한 가장 깊은 단계)
+  renderStageStrip(d.kospi,  STAGES,    "#stages",   "#stageGuide");
+  renderStageStrip(d.kosdaq, STAGES_KQ, "#stagesKq", "#stageGuideKq");
+}
+
+function renderStageStrip(idxData, stages, stripSel, guideSel){
+  const strip=$(stripSel); if(!strip) return;
+  const drop=(idxData.price-idxData.ath)/idxData.ath*100;
+  const cur=stages.filter(x=>drop<=x.drop).slice(-1)[0] || stages[0];
+  strip.innerHTML=stages.map(s=>{
+    const reached = drop<=s.drop;   // 트리거 도달(1단계는 항상 도달)
+    const isNow = s.n===cur.n;      // 현재 단계
     return `<span class="stg ${reached?'on':''} ${isNow?'now':''}">${s.label}</span>`;
   }).join("");
-  // 현재 단계 안내
-  const guide=$("#stageGuide");
+  const guide=$(guideSel);
   if(guide){
-    guide.textContent = `전고점 대비 ${drop.toFixed(1)}% · 현재 ${cur.n}단계`;
+    guide.textContent = `고점 대비 ${drop.toFixed(1)}% · 현재 ${cur.n}단계`;
     guide.style.color = cur.n>=3?'var(--up)':cur.n===2?'var(--gold)':'var(--txt3)';
   }
 }
