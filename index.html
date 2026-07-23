@@ -483,10 +483,16 @@ function down(n){return Array.from({length:n},()=>60+Math.random()*40).map((v,i,
 async function fetchKoreanData(){
   if(CONFIG.KIS_PROXY_URL){
     try{
-      const r=await fetch(CONFIG.KIS_PROXY_URL);
+      // GitHub Pages는 CDN 캐시가 있어 그냥 요청하면 옛 data.json이 올 수 있다.
+      // 매 요청 고유 파라미터 + no-store 로 항상 최신본을 받는다.
+      const sep=CONFIG.KIS_PROXY_URL.includes("?")?"&":"?";
+      const url=`${CONFIG.KIS_PROXY_URL}${sep}t=${Date.now()}`;
+      const r=await fetch(url,{cache:"no-store"});
+      if(!r.ok) throw new Error("HTTP "+r.status);
       const j=await r.json();
+      if(!j || typeof j!=="object") throw new Error("형식 오류");
       return {...j, _live:true};
-    }catch(e){ console.warn("KIS 연동 실패, 데모로 대체", e); }
+    }catch(e){ console.warn("데이터 로드 실패, 데모로 대체:", e.message); }
   }
   return seedDemoHistory({...structuredClone(DEMO), _live:false});
 }
@@ -526,6 +532,14 @@ const cc=n=>n>0?'up':n<0?'down':'flat'; // 한국식: +빨강 -파랑
 
 function renderIndices(d){
   const box=$("#indices");
+  // 지수 데이터가 없거나 깨져도 화면 전체가 죽지 않도록 방어
+  const safe=(o,fallbackAth)=>{
+    const v=o||{};
+    const price=Number(v.price), ath=Number(v.ath);
+    return {price:isFinite(price)?price:0, chg:Number(v.chg)||0, chgPct:Number(v.chgPct)||0,
+            ath:(isFinite(ath)&&ath>0)?ath:(fallbackAth||1)};
+  };
+  d={...d, kospi:safe(d&&d.kospi,9385.59), kosdaq:safe(d&&d.kosdaq,1214)};
   const mk=(name,o)=>{
     const athDrop=((o.price-o.ath)/o.ath*100);
     return `<div class="idx">
