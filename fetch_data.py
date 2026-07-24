@@ -4,13 +4,28 @@ GitHub Actions 전용 · KIS 데이터를 받아 data.json 으로 저장.
 앱키는 코드에 넣지 않고 GitHub Secrets(환경변수)에서 읽습니다.
 로컬 테스트:  KIS_APP_KEY=... KIS_APP_SECRET=... python fetch_data.py
 """
-import os, json, time, math
+import os, sys, json, time, math
 from datetime import datetime, timezone, timedelta
 import requests
 
-APP_KEY    = os.environ["KIS_APP_KEY"]
-APP_SECRET = os.environ["KIS_APP_SECRET"]
+def _secret(name):
+    """시크릿이 없을 때 원인을 바로 알 수 있게 안내하고 종료."""
+    v = (os.environ.get(name) or "").strip()
+    if not v:
+        print("=" * 58)
+        print(f"❌ 시크릿 '{name}' 이(가) 비어 있거나 등록되지 않았습니다.")
+        print("")
+        print("  저장소 → Settings → Secrets and variables → Actions 에서")
+        print(f"  'New repository secret' 으로 이름을 정확히 '{name}' 로 등록하세요.")
+        print("  (Variables 탭이 아니라 Secrets 탭이어야 합니다)")
+        print("=" * 58)
+        sys.exit(1)
+    return v
+
+APP_KEY    = _secret("KIS_APP_KEY")
+APP_SECRET = _secret("KIS_APP_SECRET")
 IS_MOCK    = os.environ.get("KIS_MOCK", "0") == "1"
+print(f"· 시크릿 확인 완료 (KEY {len(APP_KEY)}자 / SECRET {len(APP_SECRET)}자)")
 
 # 사상 최고가(ATH) — 신고가 나오면 이 숫자만 수정
 KOSPI_ATH  = 9385.59   # 2026-06-19 장중 사상최고가 (전고점)
@@ -33,12 +48,34 @@ BASE = ("https://openapivts.koreainvestment.com:29443" if IS_MOCK
 KST = timezone(timedelta(hours=9))
 
 def get_token():
-    r = requests.post(f"{BASE}/oauth2/tokenP", json={
-        "grant_type": "client_credentials",
-        "appkey": APP_KEY, "appsecret": APP_SECRET}, timeout=10)
-    j = r.json()
+    url = f"{BASE}/oauth2/tokenP"
+    print(f"· 토큰 발급 요청: {BASE}")
+    try:
+        r = requests.post(url, json={
+            "grant_type": "client_credentials",
+            "appkey": APP_KEY, "appsecret": APP_SECRET}, timeout=15)
+    except Exception as e:
+        raise RuntimeError(f"KIS 서버 접속 실패({type(e).__name__}). "
+                           f"네트워크 차단이거나 KIS 서버 점검일 수 있습니다.") from e
+    try:
+        j = r.json()
+    except Exception:
+        raise RuntimeError(f"KIS 응답이 JSON이 아님 (HTTP {r.status_code}): {r.text[:200]}")
     if "access_token" not in j:
-        raise RuntimeError(f"토큰 발급 실패: {j}")
+        msg = j.get("error_description") or j.get("msg1") or ""
+        code = j.get("error_code") or j.get("msg_cd") or ""
+        print("=" * 58)
+        print(f"❌ KIS 토큰 발급 실패 (HTTP {r.status_code})")
+        print(f"   코드: {code}")
+        print(f"   내용: {msg}")
+        print("")
+        print("  자주 있는 원인:")
+        print("   · 앱키/시크릿 오타 또는 앞뒤 공백 (복사 시 줄바꿈 포함 주의)")
+        print("   · 모의투자 키를 실전 주소로 쓰거나 그 반대 (KIS_MOCK 확인)")
+        print("   · 해당 앱키의 API 신청이 아직 승인되지 않음")
+        print("=" * 58)
+        raise RuntimeError(f"토큰 발급 실패: {code} {msg}")
+    print("· 토큰 발급 성공")
     return j["access_token"]
 
 TOKEN = None
@@ -68,13 +105,29 @@ def fetch_daily(code):
     rows = r.json().get("output", [])
     return [float(x["stck_clpr"]) for x in rows if x.get("stck_clpr")]
 
+_INV_DEBUG = {"done": False}
+
 def investor_net(code, price):
     """종목별 외국인·기관·개인 당일 순매수(억원). 거래대금 필드 우선, 없으면 수량×현재가."""
     try:
         r = requests.get(f"{BASE}/uapi/domestic-stock/v1/quotations/inquire-investor",
             headers=headers("FHKST01010900"),
             params={"fid_cond_mrkt_div_code": "J", "fid_input_iscd": code}, timeout=10)
-        rows = r.json().get("output", [])
+        body = r.json()
+        rows = body.get("output", [])
+        # 첫 종목 1회만 응답 구조를 로그에 남겨 수급 0 원인을 진단
+        if not _INV_DEBUG["done"]:
+            _INV_DEBUG["done"] = True
+            print(f"  [진단] 수급 응답 HTTP {r.status_code} "
+                  f"rt_cd={body.get('rt_cd')} msg={body.get('msg1','')[:40]}")
+            if rows:
+                d0 = rows[0]
+                keys = [k for k in d0.keys() if "ntby" in k or "frgn" in k or "orgn" in k or "prsn" in k]
+                print(f"  [진단] output {len(rows)}행 · 수급관련 필드: {keys[:8]}")
+                print(f"  [진단] 샘플값: " +
+                      ", ".join(f"{k}={d0.get(k)}" for k in keys[:4]))
+            else:
+                print(f"  [진단] output 비어있음 · 전체 키: {list(body.keys())}")
         if not rows:
             return 0, 0, 0
         d = rows[0]  # 최신 영업일
@@ -321,6 +374,9 @@ def main():
     changed = [s["name"] for s in sectors if s.get("signalChangedAgo") == 0]
     if changed:
         print("  ◆ 신호 전환:", ", ".join(changed))
+    if mkt_frgn == 0 and mkt_inst == 0 and mkt_prsn == 0:
+        warnings.append("투자자 수급 미수신(0 표시) — 점수의 수급 25%가 중립 처리됨")
+        print("  ! 수급 전량 0 — 위 [진단] 로그를 확인하세요")
 
     payload = {
         "kospi":  {k: kospi[k]  for k in ("price", "chg", "chgPct", "ath")},
