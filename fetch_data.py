@@ -212,7 +212,44 @@ def merge_history(sec, prev_sec, ok=True):
     cur = sec["score"]
     sec["d6"]  = cur - h[-7]  if len(h) >= 7  else None   # 6갱신 전 대비
     sec["d12"] = cur - h[-13] if len(h) >= 13 else None   # 12갱신 전 대비
+
+    # 일 단위 이력 병합(투자자용: "며칠째", "며칠 전 전환")
+    _merge_daily(sec, pv)
     return sec
+
+DAILY_MAX = 30   # 최근 30영업일 보관
+
+def _today_kst():
+    return datetime.now(KST).strftime("%Y-%m-%d")
+
+def _merge_daily(sec, pv):
+    """하루 1개(당일은 계속 덮어씀)로 일별 점수·신호를 쌓고 일 단위 지속기간을 계산."""
+    today = _today_kst()
+    daily = [dict(x) for x in (pv.get("daily") or [])]  # [{date,score,signal}]
+    entry = {"date": today, "score": sec["score"], "signal": sec["signal"]}
+    if daily and daily[-1].get("date") == today:
+        daily[-1] = entry          # 같은 날 → 최신 종가 점수로 갱신
+    else:
+        daily.append(entry)        # 새 영업일
+    daily = daily[-DAILY_MAX:]
+    sec["daily"] = daily
+
+    # 일 단위 신호 기준 지속기간/전환 계산 (오늘 포함 연속 며칠 같은 신호인지)
+    sig_days = [d for d in daily]
+    cur_sig = sec["signal"]
+    hold_days = 0
+    for d in reversed(sig_days):
+        if d["signal"] == cur_sig:
+            hold_days += 1
+        else:
+            break
+    sec["holdDays"] = hold_days                      # 현재 신호를 며칠째 유지 중(오늘 포함)
+    # 직전에 달랐던 신호와, 그게 며칠 전이었는지
+    prev_diff = None
+    for d in reversed(sig_days[:-hold_days] if hold_days < len(sig_days) else []):
+        prev_diff = d["signal"]; break
+    sec["prevDaySignal"] = prev_diff                 # 이전 국면의 신호(없으면 None)
+    sec["daySpan"] = len(daily)                      # 관측 일수(신뢰도 판단용)
 
 def fetch_basket(members):
     """섹터 바스켓 집계: 등락률은 구성종목 평균, 수급은 합산."""

@@ -94,9 +94,13 @@
   .stg{
     padding:4px 9px; border-radius:7px; font-size:11px; font-weight:700;
     border:1px solid var(--line); color:var(--txt3); white-space:nowrap;
+    opacity:.5;
   }
-  .stg.on{background:var(--up-dim); border-color:var(--up); color:var(--up)}
-  .stg.now{background:var(--gold-dim); border-color:var(--gold); color:var(--gold)}
+  /* 지나온(도달한) 단계: 은은하게 표시 — '현재'와 혼동 방지 */
+  .stg.on{background:transparent; border-color:var(--line); color:var(--txt2); opacity:.7}
+  /* 현재 단계: 유일하게 뚜렷하게 강조 */
+  .stg.now{background:var(--gold-dim); border-color:var(--gold); color:var(--gold);
+           opacity:1; font-weight:900; box-shadow:0 0 0 1px var(--gold)}
 
   /* ── Section ── */
   section{margin-bottom:22px}
@@ -161,6 +165,12 @@
   .tscore{font-size:13px; font-weight:900; white-space:nowrap}
   .tempty{font-size:11.5px; color:var(--txt3); font-weight:700; padding:9px 0}
   .thint{font-size:10.5px; color:var(--txt3); font-weight:700; margin-top:9px; line-height:1.5}
+
+  /* 일별 신호 점 + 이력 문구 */
+  .ddots{display:inline-flex; gap:3px; align-items:center; vertical-align:middle}
+  .ddots i{width:7px; height:7px; border-radius:2px; display:inline-block}
+  .rhist{font-size:11px; font-weight:800; margin-top:3px; display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+  .shist{font-size:9.5px; font-weight:800; margin-top:4px; line-height:1.3}
   .sector{
     border:1px solid var(--line); border-radius:13px; padding:12px 12px 11px;
     cursor:pointer; transition:.16s; position:relative; overflow:hidden;
@@ -320,6 +330,16 @@
 <!-- AI 섹터 추천 -->
 <section>
   <div class="sec-head"><span class="dot"></span><span class="eyebrow">04 · AI SCORING</span><h2>AI 섹터 추천 순위 <span style="font-size:11px;color:var(--txt3);font-weight:700">· 클릭하면 점수 근거</span></h2></div>
+  <div style="font-size:10.5px;color:var(--txt3);font-weight:700;margin:-4px 0 10px;line-height:1.6">
+    이름 아래 문구는 <b>일 단위 이력</b>입니다 — "며칠째 유지" 또는 "며칠 전 무슨 신호에서 전환"을 뜻합니다.
+    네모 점은 최근 영업일별 신호(왼쪽=과거, 테두리=오늘):
+    <span style="color:var(--up)">■</span> 강력매수 ·
+    <span style="color:rgba(240,80,60,.7)">■</span> 매수 ·
+    <span style="color:var(--flat)">■</span> 중립 ·
+    <span style="color:rgba(76,141,255,.7)">■</span> 비중축소 ·
+    <span style="color:var(--down)">■</span> 매도.
+    영업일이 쌓일수록 정확해집니다.
+  </div>
   <div class="rank" id="rank"></div>
 </section>
 
@@ -501,6 +521,20 @@ async function fetchKoreanData(){
    실데이터에는 절대 적용하지 않는다(서버가 쌓은 히스토리만 신뢰). */
 function seedDemoHistory(d){
   const drift=[-30,14,-4,22,6,-18,3,26,-8,10];   // 12갱신 전→현재 변화폭
+  // 일별 궤적을 '현재 점수 대비 상대 오프셋'으로 정의(오늘=0). 실제 점수에 더해 역산.
+  const dayOff=[
+    [ 34, 30, 20, 12,-10,-2, 0],   // 크게 하락해온 흐름
+    [-22,-18,-10, -6, -4,-2, 0],   // 꾸준히 상승
+    [ 20, 14,  8,  2, -2, 1, 0],   // 약세로 밀림
+    [ 16, 10,  5,  3,  1, 1, 0],   // 완만한 하락
+    [-18,-12, -6, -3, -1, 0, 0],   // 상승 후 안착
+    [ 14,  9,  5,  2,  0, 1, 0],   // 약세
+    [-14,-10, -5, -2, -1, 0, 0],   // 강세 지속
+    [-12, -8, -4, -2, -1, 0, 0],   // 강세 전환
+    [ 15, 10,  6,  2,  1, 0, 0],   // 하락
+    [ -3, -1,  1,  0,  0, 0, 0],   // 중립 횡보
+  ];
+  const today=new Date();
   d.sectors.forEach((s,i)=>{
     const cur=scoreSector(s).score, dv=drift[i%drift.length];
     const hist=[];
@@ -508,10 +542,28 @@ function seedDemoHistory(d){
       hist.push(Math.max(0,Math.min(100, Math.round(cur-dv*k/12+Math.sin(k*1.6+i)*1.8))));
     }
     hist[hist.length-1]=cur;
-    Object.assign(s,{scoreHistory:hist, score:cur,
-      d6:cur-hist[hist.length-7], d12:cur-hist[0]}, deriveFromHistory(hist));
+    // 일별 이력: 오늘=현재 점수, 과거일은 오프셋을 더해 역산
+    const off=dayOff[i%dayOff.length];
+    const daily=off.map((o,idx)=>{
+      const sc=Math.max(0,Math.min(100, cur+o));
+      const dt=new Date(today); dt.setDate(today.getDate()-(off.length-1-idx));
+      return {date:dt.toISOString().slice(0,10), score:sc, signal:signalOf(sc).key};
+    });
+    Object.assign(s,{scoreHistory:hist, score:cur, daily,
+      d6:cur-hist[hist.length-7], d12:cur-hist[0]},
+      deriveFromHistory(hist), dailyStats(daily));
   });
   return d;
+}
+/* 일별 이력에서 지속기간·이전국면 계산 (서버 _merge_daily와 동일 의미) */
+function dailyStats(daily){
+  if(!daily||!daily.length) return {holdDays:0,prevDaySignal:null,daySpan:0};
+  const cur=daily[daily.length-1].signal;
+  let hold=0;
+  for(let k=daily.length-1;k>=0;k--){ if(daily[k].signal===cur) hold++; else break; }
+  let prev=null;
+  for(let k=daily.length-1-hold;k>=0;k--){ prev=daily[k].signal; break; }
+  return {holdDays:hold, prevDaySignal:prev, daySpan:daily.length};
 }
 /* 히스토리에서 신호 전환 정보를 도출(데모용 · 서버 로직과 동일한 의미) */
 function deriveFromHistory(hist){
@@ -645,12 +697,15 @@ function renderHeat(sectors){
   $("#heat").innerHTML=SCORED.map((s,i)=>{
     const barcol=s.sig.top==='buy'?'var(--up)':s.sig.top==='sell'?'var(--down)':'var(--flat)';
     const mcount=membersOf(s).length;
+    const hp=historyPhrase(s);
     return `<div class="sector" tabindex="0" style="background:${heatColor(s.score)}" data-i="${i}">
       <div class="stopbar" style="background:${barcol}"></div>
       <div class="snm">${s.name}${mcount?`<span style="font-size:9px;color:var(--txt3);font-weight:700;margin-left:5px">${mcount}종목</span>`:''}</div>
       <div class="ssig badge ${s.sig.cls}">${s.sig.txt}</div>
       <div class="sscore mono">${s.score}<small>/100</small></div>
       <div class="schg mono ${cc(s.chg1d)}">${sign(s.chg1d)} ${Math.abs(s.chg1d)}% (1D)</div>
+      <div class="shist" style="color:${toneColor(hp.tone)}">${hp.txt}</div>
+      ${dayDots(s.daily,7)}
     </div>`;
   }).join("");
 }
@@ -658,6 +713,43 @@ function renderHeat(sectors){
 /* ── 신호 변화 감시 ────────────────────────────────────────── */
 const SIGLVL={sell:0,reduce:1,hold:2,buy:3,strongbuy:4};
 const SIGTXT={sell:"매도",reduce:"비중축소",hold:"중립",buy:"매수",strongbuy:"강력매수"};
+
+/* 투자자용 이력 문장: "4일째 강력매수 유지" / "2일 전 매수→매도 전환" 등 */
+function historyPhrase(s){
+  const cur=SIGTXT[s.sig?s.sig.key:s.signal]||"—";
+  const hold=s.holdDays, prev=s.prevDaySignal, span=s.daySpan||0;
+  if(!hold || span<=1) return {txt:`오늘 첫 집계 · ${cur}`, tone:"new"};
+  // 상승/하락 방향 판정(전환이 있었던 경우)
+  let dir="flat";
+  if(prev!=null){
+    const up=SIGLVL[s.sig?s.sig.key:s.signal] > SIGLVL[prev];
+    dir=up?"up":"down";
+  }
+  if(prev==null){
+    // 관측 내내 같은 신호
+    return {txt:`${span}일 내내 ${cur} 유지`, tone:"steady"};
+  }
+  if(hold===1){
+    // 오늘 막 전환
+    return {txt:`오늘 ${SIGTXT[prev]}→${cur} 전환`, tone:dir};
+  }
+  // 며칠 전 전환 후 유지
+  return {txt:`${hold-1}일 전 ${SIGTXT[prev]}→${cur} 전환 · ${hold}일째 유지`, tone:dir};
+}
+function toneColor(tone){
+  return tone==="up"?"var(--up)": tone==="down"?"var(--down)":
+         tone==="steady"?"var(--gold)":"var(--txt3)";
+}
+/* 일별 신호를 색 점으로 (최근 N일, 왼→오 과거→오늘) */
+function dayDots(daily,n){
+  if(!daily||!daily.length) return "";
+  const arr=daily.slice(-n);
+  const col={strongbuy:"var(--up)",buy:"rgba(240,80,60,.55)",hold:"var(--flat)",
+             reduce:"rgba(76,141,255,.55)",sell:"var(--down)"};
+  return `<span class="ddots">`+arr.map((d,i)=>
+    `<i title="${d.date} ${SIGTXT[d.signal]}(${d.score})" style="background:${col[d.signal]||'var(--flat)'};${i===arr.length-1?'outline:1.5px solid var(--txt2);outline-offset:1px':''}"></i>`
+  ).join("")+`</span>`;
+}
 const RECENT_N=5;    // 최근 N갱신 이내 신호 전환을 '변화'로 본다
 const DELTA_TH=10;   // 6갱신 점수 급등/급락 임계
 
@@ -749,6 +841,9 @@ function renderRank(){
       <div class="rk mono">${i+1}</div>
       <div class="rmid">
         <div class="rnm">${s.name}${transTag}</div>
+        <div class="rhist" style="color:${toneColor(historyPhrase(s).tone)}">
+          ${dayDots(s.daily,10)}<span>${historyPhrase(s).txt}</span>
+        </div>
         <div class="rwhy">${whyText(s,{factors:f})}</div>
       </div>
       <div class="rright">
