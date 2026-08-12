@@ -35,9 +35,8 @@
    "score": 33,
    "signal": "reduce",
    "signalFrom": "sell",
-   "signalChangedAgo": 2,
+   "signalChangedAgo": 3,
    "scoreHistory": [
-    15,
     15,
     21,
     25,
@@ -49,6 +48,7 @@
     27,
     36,
     32,
+    33,
     33
    ],
    "stale": false,
@@ -142,9 +142,8 @@
    "score": 32,
    "signal": "reduce",
    "signalFrom": "buy",
-   "signalChangedAgo": 13,
+   "signalChangedAgo": 14,
    "scoreHistory": [
-    42,
     41,
     36,
     36,
@@ -156,11 +155,12 @@
     36,
     34,
     33,
+    32,
     32
    ],
    "stale": false,
    "d6": -1,
-   "d12": -10,
+   "d12": -9,
    "daily": [
     {
      "date": "2026-07-27",
@@ -249,9 +249,8 @@
    "score": 40,
    "signal": "reduce",
    "signalFrom": "hold",
-   "signalChangedAgo": 15,
+   "signalChangedAgo": 16,
    "scoreHistory": [
-    39,
     40,
     39,
     40,
@@ -263,11 +262,12 @@
     40,
     42,
     40,
+    40,
     40
    ],
    "stale": false,
    "d6": 2,
-   "d12": 1,
+   "d12": 0,
    "daily": [
     {
      "date": "2026-07-27",
@@ -356,9 +356,8 @@
    "score": 81,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 16,
+   "signalChangedAgo": 17,
    "scoreHistory": [
-    88,
     88,
     78,
     77,
@@ -370,6 +369,7 @@
     85,
     81,
     80,
+    81,
     81
    ],
    "stale": false,
@@ -463,9 +463,8 @@
    "score": 84,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 3,
+   "signalChangedAgo": 4,
    "scoreHistory": [
-    88,
     88,
     80,
     68,
@@ -476,6 +475,7 @@
     63,
     76,
     80,
+    84,
     84,
     84
    ],
@@ -570,9 +570,8 @@
    "score": 60,
    "signal": "buy",
    "signalFrom": "hold",
-   "signalChangedAgo": 2,
+   "signalChangedAgo": 3,
    "scoreHistory": [
-    83,
     83,
     74,
     64,
@@ -584,6 +583,7 @@
     59,
     61,
     61,
+    60,
     60
    ],
    "stale": false,
@@ -677,7 +677,7 @@
    "score": 87,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 18,
+   "signalChangedAgo": 19,
    "scoreHistory": [
     88,
     88,
@@ -690,7 +690,7 @@
     88,
     88,
     88,
-    88,
+    87,
     87
    ],
    "stale": false,
@@ -784,9 +784,8 @@
    "score": 80,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 18,
+   "signalChangedAgo": 19,
    "scoreHistory": [
-    80,
     80,
     82,
     83,
@@ -798,6 +797,7 @@
     83,
     83,
     81,
+    80,
     80
    ],
    "stale": false,
@@ -891,9 +891,8 @@
    "score": 69,
    "signal": "buy",
    "signalFrom": "strongbuy",
-   "signalChangedAgo": 15,
+   "signalChangedAgo": 16,
    "scoreHistory": [
-    66,
     66,
     63,
     67,
@@ -904,6 +903,7 @@
     68,
     69,
     70,
+    69,
     69,
     69
    ],
@@ -998,9 +998,8 @@
    "score": 36,
    "signal": "reduce",
    "signalFrom": "sell",
-   "signalChangedAgo": 18,
+   "signalChangedAgo": 19,
    "scoreHistory": [
-    40,
     40,
     34,
     33,
@@ -1012,6 +1011,7 @@
     35,
     36,
     37,
+    36,
     36
    ],
    "stale": false,
@@ -1097,9 +1097,9 @@
    "hint": "미국 대표지수",
    "live": true,
    "spark": [
-    7428.78,
     7316.15,
     7437.63,
+    7489.72,
     7600.5,
     7736.52,
     7723.55,
@@ -1135,9 +1135,9 @@
    "hint": "삼성·SK 선행",
    "live": true,
    "spark": [
+    11035.68,
     10447.49,
     11302.99,
-    11311.08,
     11430.35,
     12179.26,
     12008.88,
@@ -1149,8 +1149,8 @@
   },
   {
    "k": "원/달러",
-   "v": "1,416",
-   "c": -0.08,
+   "v": "1,417",
+   "c": -0.04,
    "hint": "원↓ 외국인 유리",
    "live": true,
    "spark": [
@@ -1163,7 +1163,7 @@
     1422.3,
     1407.0,
     1417.31,
-    1416.18
+    1416.77
    ]
   },
   {
@@ -1188,11 +1188,10 @@
   {
    "k": "VIX 공포지수",
    "v": "15.3",
-   "c": -1.16,
+   "c": 0.39,
    "hint": "낮을수록 안정",
    "live": true,
    "spark": [
-    20.66,
     17.09,
     15.99,
     15.86,
@@ -1201,13 +1200,14 @@
     15.15,
     14.9,
     15.46,
-    15.28
+    15.28,
+    15.34
    ]
   },
   {
    "k": "WTI 유가",
-   "v": "$83.7",
-   "c": 0.61,
+   "v": "$83.9",
+   "c": 0.84,
    "hint": "에너지·조선 영향",
    "live": true,
    "spark": [
@@ -1220,7 +1220,7 @@
     78.18,
     82.13,
     83.2,
-    83.71
+    83.9
    ]
   },
   {
@@ -1239,7 +1239,7 @@
    "raw": true
   }
  ],
- "generatedAt": "2026-08-12T15:44:06.843976+09:00",
+ "generatedAt": "2026-08-12T17:04:48.169468+09:00",
  "warnings": [
   "투자자 수급 미수신(0 표시) — 점수의 수급 25%가 중립 처리됨"
  ],
