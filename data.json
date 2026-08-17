@@ -35,12 +35,12 @@
    "score": 59,
    "signal": "hold",
    "signalFrom": "reduce",
-   "signalChangedAgo": 16,
+   "signalChangedAgo": 17,
    "scoreHistory": [
-    45,
     57,
     57,
     57,
+    59,
     59,
     59,
     59,
@@ -53,7 +53,7 @@
    ],
    "stale": false,
    "d6": 0,
-   "d12": 14,
+   "d12": 2,
    "daily": [
     {
      "date": "2026-07-27",
@@ -157,12 +157,12 @@
    "score": 35,
    "signal": "reduce",
    "signalFrom": "buy",
-   "signalChangedAgo": 31,
+   "signalChangedAgo": 32,
    "scoreHistory": [
     35,
     35,
-    35,
     34,
+    35,
     35,
     35,
     35,
@@ -279,12 +279,12 @@
    "score": 67,
    "signal": "buy",
    "signalFrom": "hold",
-   "signalChangedAgo": 11,
+   "signalChangedAgo": 12,
    "scoreHistory": [
-    45,
     62,
     65,
     66,
+    67,
     67,
     67,
     67,
@@ -297,7 +297,7 @@
    ],
    "stale": false,
    "d6": 0,
-   "d12": 22,
+   "d12": 5,
    "daily": [
     {
      "date": "2026-07-27",
@@ -401,12 +401,12 @@
    "score": 82,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 34,
+   "signalChangedAgo": 35,
    "scoreHistory": [
-    76,
     74,
     75,
     79,
+    82,
     82,
     82,
     82,
@@ -419,7 +419,7 @@
    ],
    "stale": false,
    "d6": 0,
-   "d12": 6,
+   "d12": 8,
    "daily": [
     {
      "date": "2026-07-27",
@@ -523,12 +523,12 @@
    "score": 75,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 21,
+   "signalChangedAgo": 22,
    "scoreHistory": [
-    87,
     73,
     74,
     74,
+    75,
     75,
     75,
     75,
@@ -541,7 +541,7 @@
    ],
    "stale": false,
    "d6": 0,
-   "d12": -12,
+   "d12": 2,
    "daily": [
     {
      "date": "2026-07-27",
@@ -645,11 +645,11 @@
    "score": 60,
    "signal": "buy",
    "signalFrom": "hold",
-   "signalChangedAgo": 9,
+   "signalChangedAgo": 10,
    "scoreHistory": [
+    59,
+    59,
     60,
-    59,
-    59,
     60,
     60,
     60,
@@ -663,7 +663,7 @@
    ],
    "stale": false,
    "d6": 0,
-   "d12": 0,
+   "d12": 1,
    "daily": [
     {
      "date": "2026-07-27",
@@ -767,12 +767,12 @@
    "score": 79,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 36,
+   "signalChangedAgo": 37,
    "scoreHistory": [
-    83,
     78,
     78,
     77,
+    79,
     79,
     79,
     79,
@@ -785,7 +785,7 @@
    ],
    "stale": false,
    "d6": 0,
-   "d12": -4,
+   "d12": 1,
    "daily": [
     {
      "date": "2026-07-27",
@@ -889,12 +889,12 @@
    "score": 86,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 36,
+   "signalChangedAgo": 37,
    "scoreHistory": [
     82,
-    82,
     84,
     84,
+    86,
     86,
     86,
     86,
@@ -1011,12 +1011,12 @@
    "score": 66,
    "signal": "buy",
    "signalFrom": "strongbuy",
-   "signalChangedAgo": 33,
+   "signalChangedAgo": 34,
    "scoreHistory": [
     63,
     63,
     63,
-    63,
+    66,
     66,
     66,
     66,
@@ -1133,12 +1133,12 @@
    "score": 25,
    "signal": "sell",
    "signalFrom": "reduce",
-   "signalChangedAgo": 16,
+   "signalChangedAgo": 17,
    "scoreHistory": [
-    22,
     23,
     23,
     24,
+    25,
     25,
     25,
     25,
@@ -1151,7 +1151,7 @@
    ],
    "stale": false,
    "d6": 0,
-   "d12": 3,
+   "d12": 2,
    "daily": [
     {
      "date": "2026-07-27",
@@ -1299,8 +1299,8 @@
   },
   {
    "k": "원/달러",
-   "v": "1,414",
-   "c": -0.22,
+   "v": "1,412",
+   "c": -0.34,
    "hint": "원↓ 외국인 유리",
    "live": true,
    "spark": [
@@ -1313,7 +1313,7 @@
     1412.18,
     1416.46,
     1416.85,
-    1413.69
+    1412.05
    ]
   },
   {
@@ -1356,8 +1356,8 @@
   },
   {
    "k": "WTI 유가",
-   "v": "$82.1",
-   "c": -0.34,
+   "v": "$81.7",
+   "c": -0.8,
    "hint": "에너지·조선 영향",
    "live": true,
    "spark": [
@@ -1370,7 +1370,7 @@
     83.27,
     81.25,
     82.4,
-    82.12
+    81.74
    ]
   },
   {
@@ -1389,7 +1389,7 @@
    "raw": true
   }
  ],
- "generatedAt": "2026-08-17T14:55:14.485303+09:00",
+ "generatedAt": "2026-08-17T15:31:10.583283+09:00",
  "warnings": [
   "투자자 수급 미수신(0 표시) — 점수의 수급 25%가 중립 처리됨"
  ],
