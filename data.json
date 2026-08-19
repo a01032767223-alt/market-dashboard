@@ -1,14 +1,14 @@
 {
  "kospi": {
-  "price": 6508.05,
-  "chg": -361.78,
-  "chgPct": -5.27,
+  "price": 6494.8,
+  "chg": -375.03,
+  "chgPct": -5.46,
   "ath": 9385.59
  },
  "kosdaq": {
-  "price": 828.7,
-  "chg": -5.5,
-  "chgPct": -0.66,
+  "price": 834.87,
+  "chg": 0.67,
+  "chgPct": 0.08,
   "ath": 1214.0
  },
  "investors": {
@@ -16,14 +16,14 @@
   "inst": 0,
   "retail": 0
  },
- "fearGreed": 13,
+ "fearGreed": 16,
  "sectors": [
   {
    "name": "반도체",
-   "chg1d": -5.83,
-   "chg5d": 5.4,
-   "chg20d": -6.94,
-   "maDev": 2.08,
+   "chg1d": -5.65,
+   "chg5d": 5.66,
+   "chg20d": -6.66,
+   "maDev": 2.36,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -31,13 +31,12 @@
     "SK하이닉스",
     "한미반도체"
    ],
-   "rsVsKospi": -10.62,
-   "score": 40,
+   "rsVsKospi": -10.48,
+   "score": 41,
    "signal": "reduce",
    "signalFrom": "buy",
-   "signalChangedAgo": 1,
+   "signalChangedAgo": 2,
    "scoreHistory": [
-    67,
     64,
     64,
     65,
@@ -49,11 +48,12 @@
     61,
     61,
     40,
-    40
+    40,
+    41
    ],
    "stale": false,
-   "d6": -21,
-   "d12": -27,
+   "d6": -20,
+   "d12": -23,
    "daily": [
     {
      "date": "2026-07-27",
@@ -142,7 +142,7 @@
     },
     {
      "date": "2026-08-19",
-     "score": 40,
+     "score": 41,
      "signal": "reduce"
     }
    ],
@@ -152,10 +152,10 @@
   },
   {
    "name": "금융",
-   "chg1d": -2.87,
-   "chg5d": -1.12,
-   "chg20d": -3.8,
-   "maDev": -1.83,
+   "chg1d": -3.06,
+   "chg5d": -1.31,
+   "chg20d": -3.98,
+   "maDev": -2.01,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -163,13 +163,12 @@
     "신한지주",
     "하나금융지주"
    ],
-   "rsVsKospi": -7.48,
-   "score": 33,
+   "rsVsKospi": -7.8,
+   "score": 32,
    "signal": "reduce",
    "signalFrom": "sell",
-   "signalChangedAgo": 0,
+   "signalChangedAgo": 1,
    "scoreHistory": [
-    38,
     38,
     38,
     38,
@@ -181,11 +180,12 @@
     38,
     38,
     31,
-    33
+    33,
+    32
    ],
    "stale": false,
-   "d6": -4,
-   "d12": -5,
+   "d6": -6,
+   "d12": -6,
    "daily": [
     {
      "date": "2026-07-27",
@@ -274,7 +274,7 @@
     },
     {
      "date": "2026-08-19",
-     "score": 33,
+     "score": 32,
      "signal": "reduce"
     }
    ],
@@ -284,10 +284,10 @@
   },
   {
    "name": "자동차",
-   "chg1d": -4.16,
-   "chg5d": 0.5,
-   "chg20d": -0.36,
-   "maDev": 1.06,
+   "chg1d": -4.18,
+   "chg5d": 0.55,
+   "chg20d": -0.3,
+   "maDev": 1.11,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -295,13 +295,12 @@
     "기아",
     "현대모비스"
    ],
-   "rsVsKospi": -4.04,
+   "rsVsKospi": -4.12,
    "score": 43,
    "signal": "reduce",
    "signalFrom": "hold",
-   "signalChangedAgo": 1,
+   "signalChangedAgo": 2,
    "scoreHistory": [
-    66,
     62,
     60,
     60,
@@ -313,11 +312,12 @@
     57,
     57,
     44,
+    43,
     43
    ],
    "stale": false,
-   "d6": -12,
-   "d12": -23,
+   "d6": -13,
+   "d12": -19,
    "daily": [
     {
      "date": "2026-07-27",
@@ -416,10 +416,10 @@
   },
   {
    "name": "2차전지",
-   "chg1d": -0.73,
-   "chg5d": 0.61,
-   "chg20d": 11.19,
-   "maDev": 5.22,
+   "chg1d": -0.63,
+   "chg5d": 0.74,
+   "chg20d": 11.33,
+   "maDev": 5.35,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -428,12 +428,11 @@
     "LG화학"
    ],
    "rsVsKospi": 7.51,
-   "score": 74,
+   "score": 75,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 51,
+   "signalChangedAgo": 52,
    "scoreHistory": [
-    80,
     79,
     77,
     78,
@@ -445,11 +444,12 @@
     73,
     73,
     73,
-    74
+    74,
+    75
    ],
    "stale": false,
-   "d6": 1,
-   "d12": -6,
+   "d6": 2,
+   "d12": -4,
    "daily": [
     {
      "date": "2026-07-27",
@@ -538,7 +538,7 @@
     },
     {
      "date": "2026-08-19",
-     "score": 74,
+     "score": 75,
      "signal": "strongbuy"
     }
    ],
@@ -548,10 +548,10 @@
   },
   {
    "name": "방산",
-   "chg1d": -0.26,
-   "chg5d": 3.84,
-   "chg20d": 14.68,
-   "maDev": 5.87,
+   "chg1d": -0.59,
+   "chg5d": 3.49,
+   "chg20d": 14.24,
+   "maDev": 5.5,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -559,13 +559,12 @@
     "한국항공우주",
     "LIG넥스원"
    ],
-   "rsVsKospi": 11.0,
-   "score": 80,
+   "rsVsKospi": 10.42,
+   "score": 79,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 38,
+   "signalChangedAgo": 39,
    "scoreHistory": [
-    76,
     76,
     74,
     75,
@@ -577,11 +576,12 @@
     73,
     73,
     75,
-    80
+    80,
+    79
    ],
    "stale": false,
-   "d6": 7,
-   "d12": 4,
+   "d6": 6,
+   "d12": 3,
    "daily": [
     {
      "date": "2026-07-27",
@@ -670,7 +670,7 @@
     },
     {
      "date": "2026-08-19",
-     "score": 80,
+     "score": 79,
      "signal": "strongbuy"
     }
    ],
@@ -680,10 +680,10 @@
   },
   {
    "name": "조선",
-   "chg1d": -3.3,
-   "chg5d": -4.28,
-   "chg20d": 2.97,
-   "maDev": -2.52,
+   "chg1d": -3.33,
+   "chg5d": -4.32,
+   "chg20d": 2.93,
+   "maDev": -2.55,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -691,13 +691,12 @@
     "삼성중공업",
     "한화오션"
    ],
-   "rsVsKospi": -0.71,
+   "rsVsKospi": -0.89,
    "score": 44,
    "signal": "reduce",
    "signalFrom": "hold",
-   "signalChangedAgo": 1,
+   "signalChangedAgo": 2,
    "scoreHistory": [
-    52,
     50,
     48,
     48,
@@ -709,11 +708,12 @@
     47,
     47,
     40,
+    44,
     44
    ],
    "stale": false,
-   "d6": -2,
-   "d12": -8,
+   "d6": -3,
+   "d12": -6,
    "daily": [
     {
      "date": "2026-07-27",
@@ -812,10 +812,10 @@
   },
   {
    "name": "바이오",
-   "chg1d": -0.57,
-   "chg5d": -6.89,
-   "chg20d": 12.01,
-   "maDev": 2.13,
+   "chg1d": -0.04,
+   "chg5d": -6.36,
+   "chg20d": 12.63,
+   "maDev": 2.68,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -823,13 +823,12 @@
     "셀트리온",
     "유한양행"
    ],
-   "rsVsKospi": 8.33,
-   "score": 65,
+   "rsVsKospi": 8.81,
+   "score": 67,
    "signal": "buy",
    "signalFrom": "strongbuy",
-   "signalChangedAgo": 6,
+   "signalChangedAgo": 7,
    "scoreHistory": [
-    73,
     73,
     72,
     70,
@@ -841,11 +840,12 @@
     71,
     71,
     66,
-    65
+    65,
+    67
    ],
    "stale": false,
-   "d6": -6,
-   "d12": -8,
+   "d6": -4,
+   "d12": -6,
    "daily": [
     {
      "date": "2026-07-27",
@@ -934,7 +934,7 @@
     },
     {
      "date": "2026-08-19",
-     "score": 65,
+     "score": 67,
      "signal": "buy"
     }
    ],
@@ -944,10 +944,10 @@
   },
   {
    "name": "AI·소프트웨어",
-   "chg1d": -3.45,
-   "chg5d": -6.15,
-   "chg20d": 9.45,
-   "maDev": -1.28,
+   "chg1d": -3.38,
+   "chg5d": -6.05,
+   "chg20d": 9.57,
+   "maDev": -1.18,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -955,13 +955,12 @@
     "카카오",
     "삼성SDS"
    ],
-   "rsVsKospi": 5.77,
+   "rsVsKospi": 5.75,
    "score": 61,
    "signal": "buy",
    "signalFrom": "strongbuy",
-   "signalChangedAgo": 1,
+   "signalChangedAgo": 2,
    "scoreHistory": [
-    81,
     79,
     78,
     77,
@@ -973,11 +972,12 @@
     75,
     75,
     60,
+    61,
     61
    ],
    "stale": false,
-   "d6": -13,
-   "d12": -20,
+   "d6": -14,
+   "d12": -18,
    "daily": [
     {
      "date": "2026-07-27",
@@ -1076,10 +1076,10 @@
   },
   {
    "name": "전력·원전",
-   "chg1d": -3.41,
-   "chg5d": -4.87,
-   "chg20d": 4.28,
-   "maDev": -1.18,
+   "chg1d": -3.88,
+   "chg5d": -5.24,
+   "chg20d": 3.89,
+   "maDev": -1.54,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -1087,13 +1087,12 @@
     "한국전력",
     "LS ELECTRIC"
    ],
-   "rsVsKospi": 0.6,
-   "score": 48,
+   "rsVsKospi": 0.07,
+   "score": 46,
    "signal": "hold",
    "signalFrom": "reduce",
-   "signalChangedAgo": 0,
+   "signalChangedAgo": 1,
    "scoreHistory": [
-    71,
     68,
     66,
     67,
@@ -1105,11 +1104,12 @@
     65,
     65,
     42,
-    48
+    48,
+    46
    ],
    "stale": false,
-   "d6": -15,
-   "d12": -23,
+   "d6": -18,
+   "d12": -22,
    "daily": [
     {
      "date": "2026-07-27",
@@ -1198,7 +1198,7 @@
     },
     {
      "date": "2026-08-19",
-     "score": 48,
+     "score": 46,
      "signal": "hold"
     }
    ],
@@ -1208,10 +1208,10 @@
   },
   {
    "name": "엔터테인먼트",
-   "chg1d": -0.46,
-   "chg5d": -9.54,
-   "chg20d": -6.71,
-   "maDev": -6.89,
+   "chg1d": 0.84,
+   "chg5d": -8.3,
+   "chg20d": -5.44,
+   "maDev": -5.68,
    "foreignNet": 0,
    "instNet": 0,
    "members": [
@@ -1219,13 +1219,12 @@
     "JYP Ent.",
     "에스엠"
    ],
-   "rsVsKospi": -10.39,
-   "score": 19,
+   "rsVsKospi": -9.26,
+   "score": 22,
    "signal": "sell",
    "signalFrom": "reduce",
-   "signalChangedAgo": 33,
+   "signalChangedAgo": 34,
    "scoreHistory": [
-    22,
     21,
     20,
     20,
@@ -1237,11 +1236,12 @@
     18,
     18,
     16,
-    19
+    19,
+    22
    ],
    "stale": false,
-   "d6": 1,
-   "d12": -3,
+   "d6": 4,
+   "d12": 1,
    "daily": [
     {
      "date": "2026-07-27",
@@ -1330,7 +1330,7 @@
     },
     {
      "date": "2026-08-19",
-     "score": 19,
+     "score": 22,
      "signal": "sell"
     }
    ],
@@ -1399,8 +1399,8 @@
   },
   {
    "k": "원/달러",
-   "v": "1,406",
-   "c": -0.59,
+   "v": "1,400",
+   "c": -1.05,
    "hint": "원↓ 외국인 유리",
    "live": true,
    "spark": [
@@ -1413,7 +1413,7 @@
     1416.85,
     1415.37,
     1414.73,
-    1406.43
+    1399.93
    ]
   },
   {
@@ -1456,12 +1456,11 @@
   },
   {
    "k": "WTI 유가",
-   "v": "$85.0",
-   "c": 0.58,
+   "v": "$84.7",
+   "c": -0.28,
    "hint": "에너지·조선 영향",
    "live": true,
    "spark": [
-    75.22,
     77.29,
     78.18,
     82.13,
@@ -1470,7 +1469,8 @@
     81.25,
     82.4,
     84.5,
-    84.99
+    84.94,
+    84.7
    ]
   },
   {
@@ -1489,7 +1489,7 @@
    "raw": true
   }
  ],
- "generatedAt": "2026-08-19T11:07:40.534184+09:00",
+ "generatedAt": "2026-08-19T12:08:35.511074+09:00",
  "warnings": [
   "투자자 수급 미수신(0 표시) — 점수의 수급 25%가 중립 처리됨"
  ],
