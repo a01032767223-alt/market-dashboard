@@ -147,6 +147,21 @@
   /* ── Sector heatmap ── */
   .heat{display:grid; grid-template-columns:repeat(5,1fr); gap:9px}
 
+  /* 섹터 트리맵 */
+  .treemap{position:relative; width:100%; height:340px; border-radius:12px; overflow:hidden}
+  .tmtile{position:absolute; border-radius:8px; padding:9px 10px; overflow:hidden;
+    cursor:pointer; transition:filter .15s, transform .15s; display:flex; flex-direction:column;
+    justify-content:space-between; box-sizing:border-box}
+  .tmtile:hover{filter:brightness(1.08); z-index:5}
+  .tmtile:focus-visible{outline:2px solid var(--gold); outline-offset:-2px}
+  .tmtile .tmname{font-weight:900; line-height:1.15}
+  .tmtile .tmsub{font-size:10.5px; opacity:.9; font-weight:700; margin-top:2px}
+  .tmtile .tmfoot{font-size:10px; opacity:.85; font-weight:700}
+  .tm-legend{display:flex; align-items:center; gap:13px; flex-wrap:wrap; margin-top:11px;
+    font-size:11px; color:var(--txt3); font-weight:700}
+  .tm-legend i{width:12px; height:12px; border-radius:3px; display:inline-block; margin-right:5px; vertical-align:-1px}
+  @media(max-width:880px){ .treemap{height:400px} }
+
   /* 신호 변화 감시 */
   .trans{display:grid; grid-template-columns:repeat(2,1fr); gap:11px}
   .tgrp{background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px 13px}
@@ -323,8 +338,9 @@
 
 <!-- 섹터 히트맵 -->
 <section>
-  <div class="sec-head"><span class="dot"></span><span class="eyebrow">03 · SECTOR HEATMAP</span><h2>10대 핵심 섹터 히트맵</h2></div>
-  <div class="heat" id="heat"></div>
+  <div class="sec-head"><span class="dot"></span><span class="eyebrow">03 · SECTOR TREEMAP</span><h2>섹터 트리맵 <span style="font-size:11px;color:var(--txt3);font-weight:700">· 크기=시총 비중 · 색=AI 점수</span></h2></div>
+  <div id="treemap" class="treemap"></div>
+  <div class="tm-legend" id="tmLegend"></div>
 </section>
 
 <!-- AI 섹터 추천 -->
@@ -475,6 +491,11 @@ const SECTOR_MEMBERS={
   "엔터테인먼트":["하이브","JYP Ent.","에스엠"],
 };
 const membersOf=s=>(s.members&&s.members.length?s.members:(SECTOR_MEMBERS[s.name]||[]));
+
+// 시총 비중(트리맵 크기) — data.json의 weight가 있으면 우선, 없으면 폴백
+const SECTOR_WEIGHTS={"반도체":34,"금융":14,"자동차":9,"2차전지":8,"바이오":9,
+  "AI·소프트웨어":8,"방산":6,"조선":5,"전력·원전":4,"엔터테인먼트":3};
+const weightOf=s=>(s.weight&&s.weight>0?s.weight:(SECTOR_WEIGHTS[s.name]||5));
 async function fetchGlobals(kr){
   // data.json 에 서버가 받아둔 글로벌 지표가 있으면 그걸 사용 (실시간)
   if(kr && Array.isArray(kr.globals) && kr.globals.length) return kr.globals;
@@ -685,29 +706,114 @@ function renderFlow(inv){
   }).join("");
 }
 
-function heatColor(score){
-  // 점수→한국식 컬러 (높음 빨강, 낮음 파랑)
-  if(score>=60){const t=(score-60)/40; return `rgba(240,80,60,${0.12+t*0.30})`;}
-  if(score<=45){const t=(45-score)/45; return `rgba(76,141,255,${0.10+t*0.28})`;}
-  return 'rgba(138,147,166,0.10)';
+// 점수 → 채도 있는 트리맵 타일 색 (히트맵과 동일 규칙, 더 진하게)
+function tileColor(score){
+  if(score>=72) return {bg:"#D85A30", fg:"#fff"};        // 강력매수
+  if(score>=60) return {bg:"#F0997B", fg:"#4A1B0C"};     // 매수
+  if(score>=45) return {bg:"#B4B2A9", fg:"#2C2C2A"};     // 중립
+  if(score>=32) return {bg:"#85B7EB", fg:"#042C53"};     // 비중축소
+  return {bg:"#378ADD", fg:"#fff"};                       // 매도
 }
+
+// 제곱화(squarified) 트리맵: 면적=비중, 정사각형에 가깝게 배치
+function squarify(items, x, y, w, h){
+  const out=[];
+  const total=items.reduce((a,b)=>a+b.value,0)||1;
+  // 값 → 면적으로 환산한 작업 목록(비중 큰 순 가정)
+  let rest=items.map(it=>({...it, a:it.value/total*w*h}));
+
+  function worst(row, len){
+    if(!row.length) return Infinity;
+    const s=row.reduce((a,b)=>a+b.a,0);
+    const mx=Math.max(...row.map(r=>r.a)), mn=Math.min(...row.map(r=>r.a));
+    return Math.max((len*len*mx)/(s*s), (s*s)/(len*len*mn));
+  }
+  function place(row, horiz, ox, oy, len){
+    const s=row.reduce((a,b)=>a+b.a,0);
+    const thick=s/len;   // 짧은 변 방향 두께
+    let off=0;
+    row.forEach(r=>{
+      const frac=r.a/s*len;
+      if(horiz) out.push({...r, x:ox, y:oy+off, w:thick, h:frac});   // 세로로 쌓기
+      else      out.push({...r, x:ox+off, y:oy, w:frac, h:thick});   // 가로로 쌓기
+      off+=frac;
+    });
+    return thick;
+  }
+
+  let cx=x, cy=y, cw=w, ch=h;
+  while(rest.length){
+    const horiz = cw >= ch;          // 긴 변을 따라 새 줄을 놓고, 짧은 변 길이로 정사각형 판정
+    const len = horiz ? ch : cw;     // 줄의 길이(짧은 변)
+    let row=[], i=0;
+    // 종횡비가 나빠지기 직전까지 이 줄에 타일을 추가
+    while(i<rest.length){
+      const cand=row.concat(rest[i]);
+      if(row.length===0 || worst(cand,len) <= worst(row,len)){ row=cand; i++; }
+      else break;
+    }
+    const thick=place(row, horiz, cx, cy, len);
+    if(horiz){ cx+=thick; cw-=thick; }   // 채운 줄만큼 가로 축소
+    else     { cy+=thick; ch-=thick; }   // 세로 축소
+    rest=rest.slice(row.length);
+  }
+  return out;
+}
+
 let SCORED=[];
-function renderHeat(sectors){
+function renderTreemap(sectors){
   SCORED=sectors.map(s=>{const sc=scoreSector(s); return {...s, ...sc, sig:signalOf(sc.score)};});
-  $("#heat").innerHTML=SCORED.map((s,i)=>{
-    const barcol=s.sig.top==='buy'?'var(--up)':s.sig.top==='sell'?'var(--down)':'var(--flat)';
-    const mcount=membersOf(s).length;
+  const box=$("#treemap"); if(!box) return;
+  const W=box.clientWidth||660, H=box.clientHeight||340;
+  // 비중 큰 순으로 정렬해야 제곱화가 안정적
+  const items=SCORED.map((s,i)=>({s, i, value:weightOf(s)})).sort((a,b)=>b.value-a.value);
+  const laid=squarify(items, 0, 0, W, H);
+  box.innerHTML=laid.map(t=>{
+    const s=t.s, col=tileColor(s.score), big=(t.w>96 && t.h>62), mid=(t.w>70 && t.h>46);
     const hp=historyPhrase(s);
-    return `<div class="sector" tabindex="0" style="background:${heatColor(s.score)}" data-i="${i}">
-      <div class="stopbar" style="background:${barcol}"></div>
-      <div class="snm">${s.name}${mcount?`<span style="font-size:9px;color:var(--txt3);font-weight:700;margin-left:5px">${mcount}종목</span>`:''}</div>
-      <div class="ssig badge ${s.sig.cls}">${s.sig.txt}</div>
-      <div class="sscore mono">${s.score}<small>/100</small></div>
-      <div class="schg mono ${cc(s.chg1d)}">${sign(s.chg1d)} ${Math.abs(s.chg1d)}% (1D)</div>
-      <div class="shist" style="color:${toneColor(hp.tone)}">${hp.txt}</div>
-      ${dayDots(s.daily,7)}
-    </div>`;
+    const pad=2; // 타일 간 간격
+    const nameSize = big?15 : mid?13 : 11;
+    const inner = big
+      ? `<div><div class="tmname" style="font-size:${nameSize}px">${s.name}</div>
+           <div class="tmsub">${s.sig.txt} · ${s.score}점</div></div>
+         <div class="tmfoot">${hp.txt}</div>`
+      : mid
+      ? `<div class="tmname" style="font-size:${nameSize}px">${s.name}</div>
+         <div class="tmfoot">${s.sig.txt} · ${s.score}</div>`
+      : `<div class="tmname" style="font-size:${nameSize}px">${s.name}</div>
+         <div class="tmfoot">${s.score}</div>`;
+    return `<div class="tmtile" tabindex="0" data-name="${s.name}"
+      style="left:${t.x+pad}px;top:${t.y+pad}px;width:${Math.max(0,t.w-pad*2)}px;
+             height:${Math.max(0,t.h-pad*2)}px;background:${col.bg};color:${col.fg}">
+      ${inner}</div>`;
   }).join("");
+  // 타일 클릭 → 해당 섹터 AI 순위로 스크롤 + 하이라이트
+  box.querySelectorAll(".tmtile").forEach(el=>{
+    const act=()=>focusSector(el.dataset.name);
+    el.addEventListener("click", act);
+    el.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();act();} });
+  });
+  // 범례
+  const lg=$("#tmLegend");
+  if(lg) lg.innerHTML=
+    `<span><i style="background:#D85A30"></i>강력매수</span>`+
+    `<span><i style="background:#F0997B"></i>매수</span>`+
+    `<span><i style="background:#B4B2A9"></i>중립</span>`+
+    `<span><i style="background:#85B7EB"></i>비중축소</span>`+
+    `<span><i style="background:#378ADD"></i>매도</span>`+
+    `<span style="color:var(--txt3)">· 타일 크기 = 시가총액 비중</span>`;
+}
+
+// 트리맵 타일 클릭 시 AI 순위의 해당 행으로 이동·강조
+function focusSector(name){
+  const row=document.querySelector(`.rrow[data-name="${name}"]`);
+  if(row){
+    row.scrollIntoView({behavior:"smooth", block:"center"});
+    row.style.transition="background .3s";
+    const orig=row.style.background;
+    row.style.background="var(--gold-dim)";
+    setTimeout(()=>{ row.style.background=orig; }, 1400);
+  }
 }
 
 /* ── 신호 변화 감시 ────────────────────────────────────────── */
@@ -906,7 +1012,7 @@ async function refresh(){
   renderGlobals(g);
   renderGauge(kr.fearGreed);
   renderFlow(kr.investors);
-  renderHeat(kr.sectors);
+  renderTreemap(kr.sectors);
   renderTransitions();
   renderRank();
   renderCal();
@@ -937,6 +1043,9 @@ $("#refreshBtn").addEventListener('click',refresh);
 refresh();
 setInterval(marketStatus,1000);
 setInterval(refresh,CONFIG.REFRESH_MS);
+// 트리맵은 픽셀 기반이라 화면 크기 바뀌면 다시 배치
+let _rz; window.addEventListener('resize',()=>{ clearTimeout(_rz);
+  _rz=setTimeout(()=>{ if(SCORED&&SCORED.length) renderTreemap(SCORED); },200); });
 </script>
 </body>
 </html>

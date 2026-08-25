@@ -43,6 +43,15 @@ SECTOR_BASKETS = [
     ("전력·원전",     [("두산에너빌리티","034020"),("한국전력","015760"),("LS ELECTRIC","010120")]),
     ("엔터테인먼트",  [("하이브","352820"),("JYP Ent.","035900"),("에스엠","041510")]),
 ]
+
+# 섹터별 시가총액 비중(%) — 트리맵 타일 크기용.
+# 2026년 코스피는 반도체 쏠림이 극단적(삼성전자+SK하이닉스만 전체의 ~46%).
+# 시총 비중은 며칠 단위로 급변하지 않아 상수로 관리(자주 조회 안 해도 됨).
+# 합이 100이 아니어도 화면에서 정규화하므로 상대 비율만 맞으면 됨.
+SECTOR_WEIGHTS = {
+    "반도체": 34, "금융": 14, "자동차": 9, "2차전지": 8, "바이오": 9,
+    "AI·소프트웨어": 8, "방산": 6, "조선": 5, "전력·원전": 4, "엔터테인먼트": 3,
+}
 BASE = ("https://openapivts.koreainvestment.com:29443" if IS_MOCK
         else "https://openapi.koreainvestment.com:9443")
 KST = timezone(timedelta(hours=9))
@@ -396,7 +405,7 @@ def main():
         sectors.append({"name": name, "chg1d": b["chg1d"], "chg5d": b["chg5d"],
                         "chg20d": b["chg20d"], "maDev": b["maDev"],
                         "foreignNet": b["foreignNet"], "instNet": b["instNet"],
-                        "members": b["members"]})
+                        "members": b["members"], "weight": SECTOR_WEIGHTS.get(name, 5)})
     if sec_fail:
         warnings.append(f"섹터 {sec_fail}개 갱신 실패(중립 처리)")
 
