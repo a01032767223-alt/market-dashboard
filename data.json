@@ -36,9 +36,8 @@
    "score": 83,
    "signal": "strongbuy",
    "signalFrom": "buy",
-   "signalChangedAgo": 7,
+   "signalChangedAgo": 8,
    "scoreHistory": [
-    43,
     46,
     56,
     62,
@@ -50,17 +49,13 @@
     82,
     79,
     82,
+    83,
     83
    ],
    "stale": false,
-   "d6": 2,
-   "d12": 40,
+   "d6": -4,
+   "d12": 37,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 45,
-     "signal": "hold"
-    },
     {
      "date": "2026-08-14",
      "score": 59,
@@ -205,9 +200,14 @@
      "date": "2026-09-23",
      "score": 83,
      "signal": "strongbuy"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 83,
+     "signal": "strongbuy"
     }
    ],
-   "holdDays": 3,
+   "holdDays": 4,
    "prevDaySignal": "buy",
    "daySpan": 30
   },
@@ -229,9 +229,8 @@
    "score": 61,
    "signal": "buy",
    "signalFrom": "strongbuy",
-   "signalChangedAgo": 10,
+   "signalChangedAgo": 11,
    "scoreHistory": [
-    75,
     74,
     65,
     61,
@@ -243,17 +242,13 @@
     66,
     62,
     61,
+    61,
     61
    ],
    "stale": false,
    "d6": -5,
-   "d12": -14,
+   "d12": -13,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 35,
-     "signal": "reduce"
-    },
     {
      "date": "2026-08-14",
      "score": 35,
@@ -398,9 +393,14 @@
      "date": "2026-09-23",
      "score": 61,
      "signal": "buy"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 61,
+     "signal": "buy"
     }
    ],
-   "holdDays": 4,
+   "holdDays": 5,
    "prevDaySignal": "strongbuy",
    "daySpan": 30
   },
@@ -422,9 +422,8 @@
    "score": 19,
    "signal": "sell",
    "signalFrom": "reduce",
-   "signalChangedAgo": 47,
+   "signalChangedAgo": 48,
    "scoreHistory": [
-    15,
     15,
     18,
     18,
@@ -436,17 +435,13 @@
     19,
     18,
     19,
+    19,
     19
    ],
    "stale": false,
-   "d6": 2,
+   "d6": -4,
    "d12": 4,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 45,
-     "signal": "hold"
-    },
     {
      "date": "2026-08-14",
      "score": 67,
@@ -591,9 +586,14 @@
      "date": "2026-09-23",
      "score": 19,
      "signal": "sell"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 19,
+     "signal": "sell"
     }
    ],
-   "holdDays": 18,
+   "holdDays": 19,
    "prevDaySignal": "reduce",
    "daySpan": 30
   },
@@ -615,9 +615,8 @@
    "score": 46,
    "signal": "hold",
    "signalFrom": "reduce",
-   "signalChangedAgo": 5,
+   "signalChangedAgo": 6,
    "scoreHistory": [
-    62,
     62,
     66,
     67,
@@ -629,17 +628,13 @@
     47,
     45,
     47,
+    46,
     46
    ],
    "stale": false,
-   "d6": 2,
+   "d6": -1,
    "d12": -16,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 76,
-     "signal": "strongbuy"
-    },
     {
      "date": "2026-08-14",
      "score": 82,
@@ -784,9 +779,14 @@
      "date": "2026-09-23",
      "score": 46,
      "signal": "hold"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 46,
+     "signal": "hold"
     }
    ],
-   "holdDays": 2,
+   "holdDays": 3,
    "prevDaySignal": "reduce",
    "daySpan": 30
   },
@@ -808,9 +808,8 @@
    "score": 50,
    "signal": "hold",
    "signalFrom": "buy",
-   "signalChangedAgo": 7,
+   "signalChangedAgo": 8,
    "scoreHistory": [
-    41,
     40,
     60,
     60,
@@ -822,17 +821,13 @@
     51,
     48,
     48,
+    50,
     50
    ],
    "stale": false,
-   "d6": 1,
-   "d12": 9,
+   "d6": -1,
+   "d12": 10,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 87,
-     "signal": "strongbuy"
-    },
     {
      "date": "2026-08-14",
      "score": 75,
@@ -977,9 +972,14 @@
      "date": "2026-09-23",
      "score": 50,
      "signal": "hold"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 50,
+     "signal": "hold"
     }
    ],
-   "holdDays": 3,
+   "holdDays": 4,
    "prevDaySignal": "buy",
    "daySpan": 30
   },
@@ -1001,9 +1001,8 @@
    "score": 43,
    "signal": "reduce",
    "signalFrom": "hold",
-   "signalChangedAgo": 2,
+   "signalChangedAgo": 3,
    "scoreHistory": [
-    54,
     53,
     52,
     50,
@@ -1015,17 +1014,13 @@
     46,
     40,
     42,
+    43,
     43
    ],
    "stale": false,
    "d6": -1,
-   "d12": -11,
+   "d12": -10,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 60,
-     "signal": "buy"
-    },
     {
      "date": "2026-08-14",
      "score": 60,
@@ -1170,9 +1165,14 @@
      "date": "2026-09-23",
      "score": 43,
      "signal": "reduce"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 43,
+     "signal": "reduce"
     }
    ],
-   "holdDays": 1,
+   "holdDays": 2,
    "prevDaySignal": "hold",
    "daySpan": 30
   },
@@ -1194,7 +1194,7 @@
    "score": 24,
    "signal": "sell",
    "signalFrom": "reduce",
-   "signalChangedAgo": 15,
+   "signalChangedAgo": 16,
    "scoreHistory": [
     27,
     27,
@@ -1203,9 +1203,9 @@
     27,
     27,
     27,
-    27,
     26,
     26,
+    24,
     24,
     24,
     24
@@ -1214,11 +1214,6 @@
    "d6": -3,
    "d12": -3,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 83,
-     "signal": "strongbuy"
-    },
     {
      "date": "2026-08-14",
      "score": 79,
@@ -1363,9 +1358,14 @@
      "date": "2026-09-23",
      "score": 24,
      "signal": "sell"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 24,
+     "signal": "sell"
     }
    ],
-   "holdDays": 6,
+   "holdDays": 7,
    "prevDaySignal": "reduce",
    "daySpan": 30
   },
@@ -1387,9 +1387,8 @@
    "score": 35,
    "signal": "reduce",
    "signalFrom": "sell",
-   "signalChangedAgo": 5,
+   "signalChangedAgo": 6,
    "scoreHistory": [
-    23,
     23,
     26,
     26,
@@ -1401,17 +1400,13 @@
     38,
     36,
     35,
+    35,
     35
    ],
    "stale": false,
-   "d6": 7,
+   "d6": -2,
    "d12": 12,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 82,
-     "signal": "strongbuy"
-    },
     {
      "date": "2026-08-14",
      "score": 86,
@@ -1556,9 +1551,14 @@
      "date": "2026-09-23",
      "score": 35,
      "signal": "reduce"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 35,
+     "signal": "reduce"
     }
    ],
-   "holdDays": 2,
+   "holdDays": 3,
    "prevDaySignal": "sell",
    "daySpan": 30
   },
@@ -1580,9 +1580,8 @@
    "score": 44,
    "signal": "reduce",
    "signalFrom": "buy",
-   "signalChangedAgo": 2,
+   "signalChangedAgo": 3,
    "scoreHistory": [
-    59,
     61,
     64,
     65,
@@ -1594,17 +1593,13 @@
     64,
     40,
     43,
+    44,
     44
    ],
    "stale": false,
-   "d6": -23,
-   "d12": -15,
+   "d6": -20,
+   "d12": -17,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 63,
-     "signal": "buy"
-    },
     {
      "date": "2026-08-14",
      "score": 66,
@@ -1749,9 +1744,14 @@
      "date": "2026-09-23",
      "score": 44,
      "signal": "reduce"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 44,
+     "signal": "reduce"
     }
    ],
-   "holdDays": 1,
+   "holdDays": 2,
    "prevDaySignal": "buy",
    "daySpan": 30
   },
@@ -1773,9 +1773,8 @@
    "score": 42,
    "signal": "reduce",
    "signalFrom": "hold",
-   "signalChangedAgo": 2,
+   "signalChangedAgo": 3,
    "scoreHistory": [
-    60,
     55,
     58,
     56,
@@ -1787,17 +1786,13 @@
     46,
     42,
     41,
+    42,
     42
    ],
    "stale": false,
-   "d6": -9,
-   "d12": -18,
+   "d6": -7,
+   "d12": -13,
    "daily": [
-    {
-     "date": "2026-08-13",
-     "score": 22,
-     "signal": "sell"
-    },
     {
      "date": "2026-08-14",
      "score": 25,
@@ -1942,9 +1937,14 @@
      "date": "2026-09-23",
      "score": 42,
      "signal": "reduce"
+    },
+    {
+     "date": "2026-09-24",
+     "score": 42,
+     "signal": "reduce"
     }
    ],
-   "holdDays": 1,
+   "holdDays": 2,
    "prevDaySignal": "hold",
    "daySpan": 30
   }
@@ -1952,12 +1952,11 @@
  "globals": [
   {
    "k": "S&P 500",
-   "v": "7,765",
-   "c": 1.49,
+   "v": "7,706",
+   "c": -0.76,
    "hint": "미국 대표지수",
    "live": true,
    "spark": [
-    7673.52,
     7636.36,
     7591.7,
     7656.98,
@@ -1966,17 +1965,17 @@
     7551.81,
     7637.76,
     7650.5,
-    7764.7
+    7764.7,
+    7706.03
    ]
   },
   {
    "k": "나스닥",
-   "v": "27,244",
-   "c": 2.72,
+   "v": "26,936",
+   "c": -0.69,
    "hint": "기술주 중심",
    "live": true,
    "spark": [
-    26421.41,
     26253.34,
     26081.72,
     26333.04,
@@ -1985,17 +1984,17 @@
     25978.43,
     26418.3,
     26522.54,
-    27122.09
+    27122.09,
+    26936.04
    ]
   },
   {
    "k": "SOX 반도체",
-   "v": "12,690",
-   "c": 6.44,
+   "v": "12,534",
+   "c": 0.81,
    "hint": "삼성·SK 선행",
    "live": true,
    "spark": [
-    11887.87,
     11931.32,
     11614.17,
     11824.0,
@@ -2004,17 +2003,17 @@
     11246.11,
     11599.49,
     11921.69,
-    12433.17
+    12433.17,
+    12534.27
    ]
   },
   {
    "k": "원/달러",
-   "v": "1,366",
-   "c": -0.59,
+   "v": "1,373",
+   "c": 1.71,
    "hint": "원↓ 외국인 유리",
    "live": true,
    "spark": [
-    1339.17,
     1348.17,
     1344.64,
     1345.61,
@@ -2023,13 +2022,14 @@
     1379.53,
     1384.86,
     1373.68,
-    1365.6
+    1350.36,
+    1373.39
    ]
   },
   {
    "k": "美10년 금리",
-   "v": "4.99%",
-   "c": 0.54,
+   "v": "5.11%",
+   "c": 3.04,
    "hint": "금리↑ 성장주 부담",
    "live": true,
    "spark": [
@@ -2042,13 +2042,13 @@
     4.95,
     5.0,
     4.96,
-    4.99
+    5.11
    ]
   },
   {
    "k": "VIX 공포지수",
-   "v": "14.3",
-   "c": -3.77,
+   "v": "15.2",
+   "c": 2.08,
    "hint": "낮을수록 안정",
    "live": true,
    "spark": [
@@ -2061,17 +2061,16 @@
     15.44,
     14.81,
     14.87,
-    14.31
+    15.18
    ]
   },
   {
    "k": "WTI 유가",
-   "v": "$91.2",
-   "c": -3.63,
+   "v": "$91.9",
+   "c": -0.24,
    "hint": "에너지·조선 영향",
    "live": true,
    "spark": [
-    102.48,
     100.05,
     101.39,
     105.83,
@@ -2080,7 +2079,8 @@
     100.3,
     95.78,
     94.59,
-    91.16
+    92.16,
+    91.94
    ]
   },
   {
@@ -2099,7 +2099,7 @@
    "raw": true
   }
  ],
- "generatedAt": "2026-09-23T22:08:38.367570+09:00",
+ "generatedAt": "2026-09-24T11:20:28.677377+09:00",
  "warnings": [
   "투자자 수급 미수신(0 표시) — 점수의 수급 25%가 중립 처리됨"
  ],
